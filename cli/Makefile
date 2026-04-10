@@ -5,7 +5,7 @@ CMD_DIR := .
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 
-.PHONY: all build clean test run install
+.PHONY: all build clean test test-integration run install
 
 all: build
 
@@ -20,6 +20,9 @@ install:
 
 test:
 	go test ./...
+
+test-integration: build
+	bash ../test/run_tests.sh ./$(BINARY)
 
 clean:
 	rm -f $(BINARY)

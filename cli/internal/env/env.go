@@ -43,12 +43,14 @@ func Load(path string, explicit bool) (LoadResult, error) {
 	passwords := make(map[string]string)
 	var loaded []string
 
-	// 1. Home fallback
-	if home, err := os.UserHomeDir(); err == nil {
-		homePath := filepath.Join(home, homeSecretsFile)
-		if readFile(homePath, passwords) == nil {
-			if _, statErr := os.Stat(homePath); statErr == nil {
-				loaded = append(loaded, homePath)
+	// 1. Home fallback — skipped when --env was explicitly provided
+	if !explicit {
+		if home, err := os.UserHomeDir(); err == nil {
+			homePath := filepath.Join(home, homeSecretsFile)
+			if readFile(homePath, passwords) == nil {
+				if _, statErr := os.Stat(homePath); statErr == nil {
+					loaded = append(loaded, homePath)
+				}
 			}
 		}
 	}
