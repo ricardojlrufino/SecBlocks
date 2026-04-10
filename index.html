@@ -45,37 +45,8 @@
     <button class="icon-btn" onclick="vaultUnlock()">Desbloquear cofre</button>
   </div>
 
-  <!-- ── LEVELS PANEL ── -->
-  <div class="levels-panel">
-    <div class="levels-header" onclick="toggleLevels()">
-      <div class="levels-title">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Níveis de Segurança
-        <span id="levelsSummary" style="font-weight:400;color:var(--muted);font-size:0.75rem;text-transform:none;letter-spacing:0;"></span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;" onclick="event.stopPropagation()">
-        <button class="icon-btn" onclick="openEnvFile()" title="Carregar senhas de um arquivo .env.secrets">📥 Carregar .env.secrets</button>
-        <input type="file" id="envFileInput" accept=".env.secrets,.env,text/plain" style="display:none" onchange="loadEnvFile(this)" />
-        <i class="chevron open" id="levelsChevron">▼</i>
-      </div>
-    </div>
-    <div class="levels-body" id="levelsBody">
-      <div id="levelsList"></div>
-
-      <!-- Add level form -->
-      <div class="add-level-row">
-        <input type="text" id="newLevelId" placeholder="ex: L5" maxlength="6"
-               style="text-transform:uppercase;font-weight:700;"
-               onkeydown="if(event.key==='Enter') addLevel()" />
-        <input type="text" id="newLevelDesc" placeholder="Descrição do nível..."
-               onkeydown="if(event.key==='Enter') addLevel()" />
-        <button class="icon-btn" onclick="addLevel()">+ Adicionar nível</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ── STATUS BAR ── -->
-  <div class="status-bar" id="statusBar">Pronto. Configure as senhas acima e cole o documento.</div>
+  <div class="status-bar" id="statusBar" style="display:none"></div>
 
   <!-- ══════════════ TAB: DOCUMENTO ══════════════ -->
   <div class="tab-panel active" id="tab-document">
@@ -211,6 +182,36 @@ Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
 
   <!-- ══════════════ TAB: COFRE ══════════════ -->
   <div class="tab-panel" id="tab-vault">
+
+    <!-- ── LEVELS PANEL ── -->
+    <div class="levels-panel">
+      <div class="levels-header" onclick="toggleLevels()">
+        <div class="levels-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Níveis de Segurança
+          <span id="levelsSummary" style="font-weight:400;color:var(--muted);font-size:0.75rem;text-transform:none;letter-spacing:0;"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;" onclick="event.stopPropagation()">
+          <button class="icon-btn" onclick="openEnvFile()" title="Carregar senhas de um arquivo .env.secrets">📥 Carregar .env.secrets</button>
+          <input type="file" id="envFileInput" accept=".env.secrets,.env,text/plain" style="display:none" onchange="loadEnvFile(this)" />
+          <i class="chevron open" id="levelsChevron">▼</i>
+        </div>
+      </div>
+      <div class="levels-body" id="levelsBody">
+        <div id="levelsList"></div>
+
+        <!-- Add level form -->
+        <div class="add-level-row">
+          <input type="text" id="newLevelId" placeholder="ex: L5" maxlength="6"
+                 style="text-transform:uppercase;font-weight:700;"
+                 onkeydown="if(event.key==='Enter') addLevel()" />
+          <input type="text" id="newLevelDesc" placeholder="Descrição do nível..."
+                 onkeydown="if(event.key==='Enter') addLevel()" />
+          <button class="icon-btn" onclick="addLevel()">+ Adicionar nível</button>
+        </div>
+      </div>
+    </div>
+
     <div class="vault-panel">
       <div id="vault-status-card"></div>
     </div>

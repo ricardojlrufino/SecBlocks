@@ -1,4 +1,4 @@
-const CACHE = 'secblocks-v4';
+const CACHE = 'secblocks-v6';
 const SHELL = [
   './',
   './index.html',

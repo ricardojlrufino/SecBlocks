@@ -429,7 +429,6 @@ function vaultRenderState() {
   }
 
   const count = vaultPasswords ? Object.keys(vaultPasswords).length : 0;
-  setLevelsCollapsed(true);
   banner.style.display = 'none';
   tabBtn.textContent = 'Cofre 🔓';
   card.innerHTML = `
@@ -755,6 +754,7 @@ function setStatus(msg, type = '') {
   const el = document.getElementById('statusBar');
   el.textContent = msg;
   el.className = 'status-bar' + (type ? ' ' + type : '');
+  el.style.display = msg ? '' : 'none';
 }
 
 function copyText(id) {
