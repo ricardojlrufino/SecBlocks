@@ -619,7 +619,13 @@ const SECRET_RE    = /\[SECRET_(L\d+)\]([\s\S]*?)\[\/SECRET_\1\]/gi;
 // Match any [ENCRYPTED_LX]…[/ENCRYPTED_LX]
 const ENCRYPTED_RE = /\[ENCRYPTED_(L\d+)\]([\s\S]*?)\[\/ENCRYPTED_\1\]/gi;
 
+// ── Unlock vault if it exists and hasn't been unlocked yet ──
+async function ensureVaultUnlocked() {
+  if (vaultLoad() && !vaultUnlocked) await vaultUnlock();
+}
+
 async function encryptDocument() {
+  await ensureVaultUnlocked();
   const input = document.getElementById('inputDoc').value;
   SECRET_RE.lastIndex = 0;
   const matches = [...input.matchAll(SECRET_RE)];
@@ -660,6 +666,7 @@ async function encryptDocument() {
 }
 
 async function decryptDocument() {
+  await ensureVaultUnlocked();
   const input = document.getElementById('inputDoc').value;
   ENCRYPTED_RE.lastIndex = 0;
   const matches = [...input.matchAll(ENCRYPTED_RE)];
@@ -715,6 +722,7 @@ function clearAll() {
 // ══════════════════════════════════════════════
 
 async function directEncrypt() {
+  await ensureVaultUnlocked();
   document.getElementById('shareBtn').style.display = 'none';
   const levelId = document.getElementById('directLevel').value;
   const pwd     = getPassword(levelId);
@@ -778,6 +786,7 @@ function shareDirectLink() {
 }
 
 async function directDecrypt() {
+  await ensureVaultUnlocked();
   const raw = document.getElementById('directCipher').value.trim();
   if (!raw) return setStatus('Cole o bloco a descriptografar.', 'err');
 

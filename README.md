@@ -37,6 +37,8 @@ Root token: [ENCRYPTED_L10]nFrnchBlnd3RQlo...umti[/ENCRYPTED_L10]
 
 The document structure, comments, and non-secret content are preserved verbatim. Only the content inside the tags is touched.
 
+See more complete example in [EXAMPLE_FILE.md](./test/EXAMPLE_FILE.md) and [EXAMPLE_FILE_ENCRIPTED.md](./test/EXAMPLE_FILE_ENCRIPTED.md)
+
 ### Security levels/blocks
 
 | Tag | Suggested audience |
