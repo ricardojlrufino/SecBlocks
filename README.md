@@ -57,12 +57,19 @@ The encrypted format is **identical** between the CLI and the Web UI, so you can
 
 ## Web UI
 
-Open `https://ricardojlrufino.github.io/SecBlocks/` in any modern browser. 
+Open `https://ricardojlrufino.github.io/SecBlocks/` in any modern browser. No build step, no dependencies, no server — everything runs locally in the browser.
 
-- **Document tab** — paste or open a Markdown file, encrypt/decrypt all levels at once
-- **Direct text tab** — encrypt or decrypt a single value without a full document
-
-Passwords are entered per-level in the security panel at the top and never leave the browser.
+- Paste or open a Markdown/text file and encrypt/decrypt all secret blocks at once
+- Encrypt or decrypt a single value without a full document
+- Save output directly to a `.md` file
+- Configure multiple security levels with custom IDs and descriptions
+- Load level passwords from a `.env.secrets` file
+- Store level passwords in the browser protected by biometrics (WebAuthn PRF), WebAuthn + PIN, or PIN only
+- Generate a shareable HTTPS link with QR code after encrypting a value
+- Share the QR code image as a file attachment via Web Share API (Android/iOS)
+- Scan a QR code with the device camera to receive an encrypted link (Android Chrome)
+- Installable as a standalone PWA with full offline support
+- Open Graph / WhatsApp preview metadata for shared links
 
 ### Sharing encrypted content via deep link
 
