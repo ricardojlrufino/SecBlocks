@@ -751,20 +751,24 @@ function shareDirectLink() {
   const level  = match[1];
   const b64url = match[2].trim().replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   const base   = window.location.origin + window.location.pathname.replace(/\/+$/, '');
-  const url    = `${base}#?secret=${level}.${b64url}`;
+  const url    = `${base}?secret=${level}.${b64url}`;
 
   document.getElementById('directEncResult').value = url;
   navigator.clipboard.writeText(url).catch(() => {});
+
+  // Detect Web Share API with file support (mobile)
+  const canShareFile = navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.png', { type: 'image/png' })] });
 
   // Modal com QR Code
   document.getElementById('vault-modal-title').textContent = '🔗 Compartilhar link';
   document.getElementById('vault-modal-body').innerHTML = `
     <div style="display:flex;justify-content:center;padding:8px 0;">
-      <div id="share-qr" style="background:#fff;padding:12px;border-radius:6px;"></div>
+      <div id="share-qr" style="background:#fff;padding:16px;border-radius:6px;"></div>
     </div>
     <p style="font-size:0.75rem;color:var(--muted);word-break:break-all;margin:0;">${url}</p>
     <div class="vault-modal-btns">
       <button class="btn btn-vault" id="share-copy-btn">⎘ Copiar link</button>
+      ${canShareFile ? '<button class="btn btn-ghost" id="share-img-btn">📤 Enviar imagem</button>' : ''}
     </div>`;
   document.getElementById('vault-modal-overlay').style.display = 'flex';
 
@@ -781,6 +785,32 @@ function shareDirectLink() {
       setTimeout(() => { btn.textContent = orig; }, 2000);
     });
   };
+
+  if (canShareFile) {
+    document.getElementById('share-img-btn').onclick = () => {
+      const qrCanvas = document.querySelector('#share-qr canvas');
+      if (!qrCanvas) return;
+
+      const pad = 24;
+      const size = qrCanvas.width + pad * 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(qrCanvas, pad, pad);
+
+      canvas.toBlob(async blob => {
+        const file = new File([blob], 'secblocks-link.png', { type: 'image/png' });
+        try {
+          await navigator.share({ files: [file], title: 'SecBlocks — encrypted link' });
+        } catch (e) {
+          if (e.name !== 'AbortError') setStatus('Erro ao compartilhar: ' + e.message, 'err');
+        }
+      }, 'image/png');
+    };
+  }
 
   setStatus('🔗 Link copiado!', 'ok');
 }
@@ -825,6 +855,7 @@ function setStatus(msg, type = '') {
   el.textContent = msg;
   el.className = 'status-bar' + (type ? ' ' + type : '');
   el.style.display = msg ? '' : 'none';
+  if (msg && type == 'err') el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function copyText(id) {
@@ -937,6 +968,19 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// Direct sub-tabs (mobile)
+document.querySelectorAll('.direct-subtab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.direct-subtab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const box = btn.dataset.box;
+    document.querySelectorAll('.direct-grid .direct-box').forEach(el => el.classList.remove('direct-active'));
+    document.getElementById('direct-box-' + box)?.classList.add('direct-active');
+  });
+});
+// Set initial active box
+document.getElementById('direct-box-encrypt')?.classList.add('direct-active');
+
 // Init
 renderLevels();
 vaultRenderState();
@@ -946,14 +990,14 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
 }
 
-// Deep Link: #?secret=LEVEL.BASE64URL
-(async function handleDeepLink() {
-  const hash = window.location.hash;
-  if (!hash.startsWith('#?secret=')) return;
+// ── Process a ?secret= link (called on page load and after QR scan) ──
+async function processSecretLink(url) {
+  const paramIdx = url.indexOf('?secret=');
+  if (paramIdx === -1) return false;
 
-  const raw = hash.slice('#?secret='.length);
+  const raw = url.slice(paramIdx + '?secret='.length).split('&')[0]; // ignore extra params
   const dot = raw.indexOf('.');
-  if (dot === -1) return setStatus('Link inválido.', 'err');
+  if (dot === -1) { setStatus('Link inválido.', 'err'); return false; }
 
   const level  = raw.slice(0, dot).toUpperCase();
   const b64url = raw.slice(dot + 1);
@@ -975,16 +1019,103 @@ if ('serviceWorker' in navigator) {
   document.querySelector('[data-tab="direct"]')?.classList.add('active');
   document.getElementById('tab-direct')?.classList.add('active');
 
-  // Se o cofre existe e ainda não foi desbloqueado, desbloquear agora
+  // Activate decrypt sub-tab on mobile
+  document.querySelectorAll('.direct-subtab').forEach(b => b.classList.remove('active'));
+  document.querySelector('.direct-subtab[data-box="decrypt"]')?.classList.add('active');
+  document.querySelectorAll('.direct-grid .direct-box').forEach(el => el.classList.remove('direct-active'));
+  document.getElementById('direct-box-decrypt')?.classList.add('direct-active');
+
   if (vaultLoad() && !vaultUnlocked) {
-    setStatus(`🔗 Link recebido — desbloqueando cofre…`, 'info');
+    setStatus('🔗 Link recebido — desbloqueando cofre…', 'info');
     await vaultUnlock();
   }
 
   if (getPassword(level)) {
-    setStatus(`🔗 Link recebido — descriptografando…`, 'info');
+    setStatus('🔗 Link recebido — descriptografando…', 'info');
     setTimeout(() => directDecrypt(), 80);
   } else {
     setStatus(`🔗 Link recebido — nível ${level}. Configure a senha e clique Descriptografar.`, 'ok');
   }
-})();
+  return true;
+}
+
+// Deep Link: ?secret=LEVEL.BASE64URL (on page load)
+processSecretLink(window.location.href);
+
+// ── QR Code Scanner ──
+let _scannerStream = null;
+let _scannerActive = false;
+
+async function openQRScanner() {
+  if (!('BarcodeDetector' in window)) {
+    return setStatus('Scanner não suportado neste browser. Use Chrome Android.', 'err');
+  }
+
+  document.getElementById('vault-modal-title').textContent = '📷 Escanear QR Code';
+  document.getElementById('vault-modal-body').innerHTML = `
+    <div class="qr-scanner-wrap">
+      <video id="qr-video" autoplay playsinline muted></video>
+      <div class="qr-viewfinder">
+        <div class="qr-frame"><span></span>
+          <div class="qr-scanline"></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--muted);text-align:center;margin:4px 0 0;">Aponte para o QR Code SecBlocks</p>
+    <div class="vault-modal-btns">
+      <button class="btn btn-ghost" onclick="stopQRScanner()">Cancelar</button>
+    </div>`;
+  document.getElementById('vault-modal-overlay').style.display = 'flex';
+
+  try {
+    _scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    const video = document.getElementById('qr-video');
+    video.srcObject = _scannerStream;
+    _scannerActive = true;
+
+    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+
+    const scan = async () => {
+      if (!_scannerActive) return;
+      if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length > 0) {
+            const value = codes[0].rawValue;
+            stopQRScanner();
+            const handled = await processSecretLink(value);
+            if (!handled) {
+              document.getElementById('directCipher').value = value;
+              setStatus('QR lido. Verifique o conteúdo e clique em Descriptografar.', 'ok');
+            }
+            return;
+          }
+        } catch {}
+      }
+      requestAnimationFrame(scan);
+    };
+
+    video.onloadedmetadata = () => requestAnimationFrame(scan);
+
+  } catch (err) {
+    stopQRScanner();
+    setStatus('Erro ao acessar câmera: ' + err.message, 'err');
+  }
+}
+
+function stopQRScanner() {
+  _scannerActive = false;
+  if (_scannerStream) {
+    _scannerStream.getTracks().forEach(t => t.stop());
+    _scannerStream = null;
+  }
+  vaultHideModal();
+}
+
+// Show scan button only if BarcodeDetector is available
+if ('BarcodeDetector' in window) {
+  const btn = document.getElementById('scan-qr-btn');
+  if (btn) btn.style.display = '';
+}

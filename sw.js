@@ -1,6 +1,6 @@
-const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1' || self.location.hostname.includes('ngrok');
 
-const CACHE = 'secblocks-v9';
+const CACHE = 'secblocks-v10';
 const SHELL = [
   './',
   './index.html',

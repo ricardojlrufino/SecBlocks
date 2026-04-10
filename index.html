@@ -9,7 +9,18 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="SecBlocks" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-  <title>SecBlocks — Criptografar Markdown</title>
+  <title>SecBlocks — Secure Shared Texts</title>
+
+  <!-- Open Graph / WhatsApp preview -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:site_name"   content="SecBlocks" />
+  <meta property="og:title"       content="SecBlocks — Secure Shared Text" />
+  <meta property="og:description" content="Multi-level encryption for texts with shareable links. Open this link to decrypt the content.. Open this link to decrypt the content." />
+  <meta property="og:url"         content="https://ricardojlrufino.github.io/SecBlocks/" />
+  <meta property="og:image"       content="https://ricardojlrufino.github.io/SecBlocks/icons/icon-192.png" />
+  <meta property="og:image:width"  content="192" />
+  <meta property="og:image:height" content="192" />
+
   <link rel="stylesheet" href="./webui/styles.css" />
 </head>
 <body>
@@ -121,9 +132,14 @@ Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
       </ul>
     </div>
 
+    <div class="direct-subtabs">
+      <button class="direct-subtab active" data-box="encrypt">Criptografar</button>
+      <button class="direct-subtab" data-box="decrypt">Descriptografar</button>
+    </div>
+
     <div class="direct-grid">
       <!-- ENCRYPT -->
-      <div class="direct-box box-encrypt">
+      <div class="direct-box box-encrypt" id="direct-box-encrypt">
         <div class="direct-box-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <h3>Criptografar texto</h3>
@@ -139,17 +155,19 @@ Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
           <div class="row-btns">
             <button class="btn btn-encrypt" onclick="directEncrypt()">Criptografar</button>
             <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directEncResult')">⎘ Copiar</button>
-            <button id="shareBtn" class="copy-btn" style="padding:7px 12px;display:none;" onclick="shareDirectLink()">🔗 Compartilhar</button>
           </div>
-
-          <div class="editor-header"><span class="editor-title">Resultado</span></div>
+          
+          <div class="editor-header">
+            <span class="editor-title">Resultado</span>
+            <button id="shareBtn" class="copy-btn" style="padding:7px 12px" onclick="shareDirectLink()">🔗 Compartilhar</button>
+          </div>
           <textarea id="directEncResult" placeholder="[ENCRYPTED_LX]…[/ENCRYPTED_LX]"
                     readonly style="min-height:80px;font-size:0.78rem;"></textarea>
         </div>
       </div>
 
       <!-- DECRYPT -->
-      <div class="direct-box box-decrypt">
+      <div class="direct-box box-decrypt" id="direct-box-decrypt">
         <div class="direct-box-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
           <h3>Descriptografar texto</h3>
@@ -170,6 +188,7 @@ Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
           <div class="row-btns">
             <button class="btn btn-decrypt" onclick="directDecrypt()">Descriptografar</button>
             <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directDecResult')">⎘ Copiar</button>
+            <button id="scan-qr-btn" class="copy-btn" style="padding:7px 12px;display:none;" onclick="openQRScanner()">📷 Scan QR</button>
           </div>
 
           <div class="editor-header"><span class="editor-title">Resultado</span></div>
