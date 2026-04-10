@@ -704,16 +704,20 @@ function shareDirectLink() {
   const match  = result.match(/\[ENCRYPTED_(L\d+)\]([\s\S]*?)\[\/ENCRYPTED_\1\]/i);
   if (!match) return setStatus('Nenhum resultado para compartilhar.', 'err');
 
-  const uri = `web+secblocks://${match[1]}/${match[2].trim()}`;
-  const btn = document.getElementById('shareBtn');
+  const level  = match[1];
+  const b64url = match[2].trim().replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  const base   = window.location.origin + window.location.pathname.replace(/\/+$/, '');
+  const url    = `${base}#?data=${level}.${b64url}`;
 
-  navigator.clipboard.writeText(uri).then(() => {
+  document.getElementById('directEncResult').value = url;
+
+  const btn = document.getElementById('shareBtn');
+  navigator.clipboard.writeText(url).then(() => {
     const orig = btn.textContent;
     btn.textContent = '✓ Copiado!';
     setTimeout(() => { btn.textContent = orig; }, 2000);
-  }).catch(() => {
-    setStatus(`Link: ${uri}`, 'ok');
-  });
+  }).catch(() => {});
+  setStatus('🔗 Link copiado!', 'ok');
 }
 
 async function directDecrypt() {
@@ -865,55 +869,45 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
 }
 
-// PWA: Protocol Handler (fallback para Firefox e browsers sem manifest protocol_handlers)
-if ('registerProtocolHandler' in navigator) {
-  try {
-    navigator.registerProtocolHandler(
-      'web+secblocks',
-      window.location.origin + window.location.pathname + '?uri=%s'
-    );
-  } catch(e) { /* silently ignore file://, iframes, etc */ }
-}
+// Deep Link: #?data=LEVEL.BASE64URL
+(async function handleDeepLink() {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#?data=')) return;
 
-// Deep Link: ?uri=web+secblocks://LEVEL/BASE64
-(function handleDeepLink() {
-  const params = new URLSearchParams(window.location.search);
-  const rawUri = params.get('uri');
-  if (!rawUri) return;
+  const raw = hash.slice('#?data='.length);
+  const dot = raw.indexOf('.');
+  if (dot === -1) return setStatus('Link inválido.', 'err');
 
-  // Double-decode guard (Windows pode double-encode)
-  let uri = rawUri;
-  try { uri = decodeURIComponent(uri); } catch {}
-  if (uri.includes('%')) { try { uri = decodeURIComponent(uri); } catch {} }
+  const level  = raw.slice(0, dot).toUpperCase();
+  const b64url = raw.slice(dot + 1);
+  const b64    = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64 + '=='.slice((b64.length % 4) || 4);
 
-  const match = uri.match(/^web\+secblocks:\/\/([^\/]+)\/(.+)$/i);
-  if (!match) return setStatus('Deep link inválido.', 'err');
-
-  const level = match[1].toUpperCase();  // ex: "L1"
-  const b64   = match[2];               // base64 data
-
-  // Preenche o textarea com o bloco completo
-  const block = `[ENCRYPTED_${level}]${b64}[/ENCRYPTED_${level}]`;
+  const block = `[ENCRYPTED_${level}]${padded}[/ENCRYPTED_${level}]`;
   const cipherEl = document.getElementById('directCipher');
   if (cipherEl) cipherEl.value = block;
 
-  // Seleciona o nível no fallback select
   const decLevelEl = document.getElementById('directDecLevel');
   if (decLevelEl) {
     const opt = [...decLevelEl.options].find(o => o.value === level);
     if (opt) decLevelEl.value = level;
   }
 
-  // Muda para aba "Texto Direto"
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelector('[data-tab="direct"]')?.classList.add('active');
   document.getElementById('tab-direct')?.classList.add('active');
 
-  setStatus(`🔗 Link recebido — nível ${level}. Configure a senha e clique Descriptografar.`, 'ok');
+  // Se o cofre existe e ainda não foi desbloqueado, desbloquear agora
+  if (vaultLoad() && !vaultUnlocked) {
+    setStatus(`🔗 Link recebido — desbloqueando cofre…`, 'info');
+    await vaultUnlock();
+  }
 
-  // Auto-descriptografa se a senha já estiver configurada
   if (getPassword(level)) {
+    setStatus(`🔗 Link recebido — descriptografando…`, 'info');
     setTimeout(() => directDecrypt(), 80);
+  } else {
+    setStatus(`🔗 Link recebido — nível ${level}. Configure a senha e clique Descriptografar.`, 'ok');
   }
 })();

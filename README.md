@@ -67,27 +67,27 @@ Passwords are entered per-level in the security panel at the top and never leave
 The **Direct text tab** doubles as a secure sharing tool. After encrypting a value, click **🔗 Compartilhar** to copy a shareable link to the clipboard:
 
 ```
-web+secblocks://L1/X+jz3W02h0...bAg==
+https://ricardojlrufino.github.io/SecBlocks#?data=L1.X-jz3W02h0...bAg
 ```
 
-Send that link over any channel — Slack, Discord, WhatsApp, email. When the recipient opens it in a browser with SecBlocks installed as a PWA:
+Send that link over any channel — Slack, Discord, WhatsApp, email. The link is a standard HTTPS URL, so it works in any browser without installing anything. When the recipient opens it:
 
 1. The Direct text tab opens automatically
 2. The encrypted block is filled in
-3. If their level password is already configured, decryption runs immediately
+3. If a vault is configured, the unlock prompt is triggered automatically
+4. If the level password is already available, decryption runs immediately
 
-The recipient never sees raw ciphertext or tags — just the link, then the plaintext. The secret travels as opaque base64; the password never does.
+The recipient never sees raw ciphertext or tags — just the link, then the plaintext. The secret travels as opaque base64url in the URL fragment; the password never does. The fragment (`#?data=…`) is never sent to the server.
 
-#### Installing SecBlocks as a PWA
+#### Installing SecBlocks as a PWA (optional)
 
-To open `web+secblocks://` links automatically, install SecBlocks as a Progressive Web App:
+Installing as a PWA is not required for deep links, but gives offline access and a standalone app experience:
 
 1. Open **https://ricardojlrufino.github.io/SecBlocks/** in Chrome or Edge
 2. Look for the **install icon** (➕) in the browser address bar and click it
 3. Confirm the installation prompt — SecBlocks will appear as a standalone app
-4. From this point on, any `web+secblocks://` link will open SecBlocks directly
 
-> Firefox does not support PWA installation on desktop. On Android, use Chrome and tap **Add to Home screen** from the browser menu.
+> On Android, use Chrome and tap **Add to Home screen** from the browser menu.
 
 ---
 
@@ -377,9 +377,10 @@ The binary wire format (`base64( salt | iv | ciphertext )`) is identical between
 
 ```
 .
-├── index.html          # Compatibility entrypoint → redirects to webui/
+├── index.html          # Web UI markup
+├── sw.js               # PWA service worker
+├── manifest.json       # PWA manifest
 ├── webui/
-│   ├── index.html      # Web UI markup
 │   ├── styles.css      # Web UI styles
 │   └── app.js          # Web UI behavior
 └── cli/

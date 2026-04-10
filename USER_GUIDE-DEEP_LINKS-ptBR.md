@@ -20,15 +20,11 @@ Use a interface em:
 
 `https://ricardojlrufino.github.io/SecBlocks/`
 
-Ou localmente em:
-
-[`webui/index.html`](./webui/index.html)
-
 ---
 
 ## Instalar como aplicativo (PWA)
 
-Para abrir links `web+secblocks://...` diretamente no SecBlocks, instale a Web UI como aplicativo.
+Instalar o SecBlocks como PWA é opcional, mas permite usá-lo offline e com acesso mais rápido.
 
 ### Chrome ou Edge no desktop
 
@@ -41,8 +37,6 @@ Para abrir links `web+secblocks://...` diretamente no SecBlocks, instale a Web U
 1. Abra a Web UI.
 2. Abra o menu do navegador.
 3. Toque em `Adicionar à tela inicial`.
-
-Depois disso, links `web+secblocks://...` poderão abrir o SecBlocks diretamente.
 
 ---
 
@@ -74,10 +68,12 @@ Esse é o fluxo recomendado para Slack, Discord, WhatsApp ou e-mail.
 O SecBlocks vai gerar um link como:
 
 ```text
-web+secblocks://L1/X+jz3W02h0...bAg==
+https://ricardojlrufino.github.io/SecBlocks#?data=L1.X-jz3W02h0...bAg
 ```
 
-Você pode enviar esse link no canal de comunicação.
+O link é copiado para a área de transferência e exibido no campo de resultado.
+
+Você pode enviar esse link diretamente no WhatsApp, Slack, Discord ou e-mail — funciona em qualquer browser, sem necessidade de instalar nada.
 
 O link contém apenas o conteúdo criptografado. A senha do nível não vai junto.
 
@@ -85,11 +81,11 @@ O link contém apenas o conteúdo criptografado. A senha do nível não vai junt
 
 ## Como o destinatário abre o link
 
-1. O destinatário precisa ter acesso ao SecBlocks.
-2. Ele abre o link recebido.
-3. O SecBlocks abre na aba `Texto Direto`.
-4. Se a senha do nível já estiver configurada, a descriptografia pode acontecer automaticamente.
-5. Caso contrário, ele informa a senha do nível e clica em `Descriptografar`.
+1. O destinatário abre o link recebido em qualquer browser.
+2. O SecBlocks abre na aba `Texto Direto`.
+3. Se o cofre estiver configurado, o desbloqueio é solicitado automaticamente.
+4. Se a senha do nível já estiver configurada (ou o cofre desbloqueado), a descriptografia acontece automaticamente.
+5. Caso contrário, o destinatário informa a senha do nível e clica em `Descriptografar`.
 
 Sem a senha correta, o conteúdo não pode ser lido.
 
@@ -105,7 +101,7 @@ Você quer enviar uma senha temporária para a equipe de suporte.
 4. Clique em `Compartilhar`.
 5. Envie o link gerado no Slack ou WhatsApp.
 
-Quem tiver a senha-mestre do nível `L1` conseguirá abrir.
+Quem tiver a senha-mestre do nível `L1` conseguirá abrir — direto no browser, sem instalar nada.
 
 ---
 
@@ -136,7 +132,7 @@ Use `Documento` quando:
 Use `Texto Direto` quando:
 
 - quiser compartilhar um único segredo
-- precisar gerar um deep link
+- precisar gerar um link compartilhável
 
 Use `Cofre` quando:
 
@@ -150,4 +146,3 @@ Use `Cofre` quando:
 - quem não tiver a senha correta não consegue descriptografar
 - se a senha do nível for perdida, o conteúdo daquele nível não poderá ser recuperado
 - o cofre é local ao navegador/dispositivo
-- links `web+secblocks://...` funcionam melhor com a Web UI instalada como PWA
