@@ -25,6 +25,7 @@
       --muted: #8892a4;
       --font: 'Segoe UI', system-ui, sans-serif;
       --mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --z-modal: 1000;
     }
 
     body {
@@ -478,7 +479,7 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,.65);
-      z-index: 1000;
+      z-index: var(--z-modal);
       align-items: center;
       justify-content: center;
     }
@@ -487,7 +488,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 24px;
-      min-width: 320px;
+      min-width: min(320px, 90vw);
       max-width: 420px;
       width: 90%;
       display: flex;
@@ -507,7 +508,7 @@
     .vault-modal-body { display: flex; flex-direction: column; gap: 12px; }
     .vault-modal-msg  { color: var(--muted); font-size: 0.88rem; margin: 0; }
     .vault-modal-hint { color: var(--muted); font-size: 0.82rem; margin: 0; }
-    .vault-modal-btns { display: flex; gap: 8px; }
+    .vault-modal-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 
     /* ── PIN Input ── */
     .vault-pin-wrap { display: flex; flex-direction: column; gap: 4px; }
