@@ -397,16 +397,23 @@ function vaultRenderState() {
   const tabBtn = document.querySelector('[data-tab="vault"]');
   if (!banner || !card || !tabBtn) return;
 
+  // Reset save button — shown only when unlocked
+  const saveWrap = document.getElementById('vault-save-wrap');
+  if (saveWrap) saveWrap.style.display = 'none';
+
   if (!vault) {
     setLevelsCollapsed(false);
     banner.style.display = 'none';
     tabBtn.textContent = 'Cofre 🔒';
     card.innerHTML = `
-      <div class="vault-state-icon">🔒</div>
-      <p class="vault-state-title">Cofre não configurado</p>
-      <p class="vault-state-desc">Salve suas senhas protegidas por biometria ou PIN.</p>
-      <div class="vault-actions">
-        <button class="btn btn-vault" onclick="vaultShowSetupModal()">Configurar cofre</button>
+      <div class="vault-card vault-card--empty">
+        <div class="vault-card-icon-wrap"><span class="vault-card-icon">🔒</span></div>
+        <h2 class="vault-card-title">Cofre não configurado</h2>
+        <p class="vault-card-desc">Salve suas senhas protegidas por biometria ou PIN e desbloqueie com um toque.</p>
+        <div class="vault-card-divider"></div>
+        <div class="vault-actions">
+          <button class="btn btn-vault" onclick="vaultShowSetupModal()">Configurar cofre</button>
+        </div>
       </div>`;
     return;
   }
@@ -418,12 +425,16 @@ function vaultRenderState() {
     banner.style.display = 'flex';
     tabBtn.textContent = 'Cofre 🔒';
     card.innerHTML = `
-      <div class="vault-state-icon">🔒</div>
-      <p class="vault-state-title">Cofre disponível</p>
-      <p class="vault-state-desc">Modo: <strong>${modeLabel}</strong></p>
-      <div class="vault-actions">
-        <button class="btn btn-vault" onclick="vaultUnlock()">Desbloquear</button>
-        <button class="btn btn-danger" onclick="vaultRemove()">Remover cofre</button>
+      <div class="vault-card vault-card--locked">
+        <div class="vault-card-icon-wrap"><span class="vault-card-icon">🔒</span></div>
+        <h2 class="vault-card-title">Cofre bloqueado</h2>
+        <p class="vault-card-desc">Desbloqueie para carregar as senhas automaticamente nos níveis.</p>
+        <span class="vault-card-badge">🔑 ${modeLabel}</span>
+        <div class="vault-card-divider"></div>
+        <div class="vault-actions">
+          <button class="btn btn-vault" onclick="vaultUnlock()">Desbloquear</button>
+          <button class="btn btn-danger" onclick="vaultRemove()">Remover cofre</button>
+        </div>
       </div>`;
     return;
   }
@@ -432,14 +443,18 @@ function vaultRenderState() {
   banner.style.display = 'none';
   tabBtn.textContent = 'Cofre 🔓';
   card.innerHTML = `
-    <div class="vault-state-icon">🔓</div>
-    <p class="vault-state-title">Cofre desbloqueado</p>
-    <p class="vault-state-desc">Modo: <strong>${modeLabel}</strong> · ${count} nível(is) carregado(s)</p>
-    <div class="vault-actions">
-      <button class="btn btn-vault" onclick="vaultSave()">Salvar no cofre</button>
-      <button class="btn btn-ghost" onclick="vaultLock()">Bloquear</button>
-      <button class="btn btn-danger" onclick="vaultRemove()">Remover cofre</button>
+    <div class="vault-card vault-card--unlocked">
+      <div class="vault-card-icon-wrap"><span class="vault-card-icon">🔓</span></div>
+      <h2 class="vault-card-title">Cofre desbloqueado</h2>
+      <p class="vault-card-desc">Senhas carregadas nos níveis automaticamente.</p>
+      <span class="vault-card-badge">✓ ${count} nível(is) · ${modeLabel}</span>
+      <div class="vault-card-divider"></div>
+      <div class="vault-actions">
+        <button class="btn btn-danger" onclick="vaultRemove()">Remover cofre</button>
+      </div>
     </div>`;
+
+  if (saveWrap) saveWrap.style.display = 'block';
 }
 
 // ══════════════════════════════════════════════

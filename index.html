@@ -183,12 +183,14 @@ Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
   <!-- ══════════════ TAB: COFRE ══════════════ -->
   <div class="tab-panel" id="tab-vault">
 
-    <div class="vault-panel">
-      <div id="vault-status-card"></div>
-    </div>
+    <div class="vault-layout">
 
-    <!-- ── LEVELS PANEL ── -->
-    <div class="levels-panel">
+      <div class="vault-panel">
+        <div id="vault-status-card"></div>
+      </div>
+
+      <!-- ── LEVELS PANEL ── -->
+      <div class="levels-panel">
       <div class="levels-header" onclick="toggleLevels()">
         <div class="levels-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -213,8 +215,13 @@ Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
                  onkeydown="if(event.key==='Enter') addLevel()" />
           <button class="icon-btn" onclick="addLevel()">+ Adicionar nível</button>
         </div>
+        <div id="vault-save-wrap" style="display:none;padding-top:4px;border-top:1px solid var(--border);margin-top:4px;">
+          <button class="btn btn-vault" style="width:100%;" onclick="vaultSave()">Salvar no cofre</button>
+        </div>
       </div>
-    </div>
+    </div><!-- /levels-panel -->
+
+    </div><!-- /vault-layout -->
 
   </div><!-- /tab-vault -->
 
