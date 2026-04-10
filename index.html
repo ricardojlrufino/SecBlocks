@@ -539,9 +539,16 @@
 <div class="tabs">
   <button class="tab-btn active" data-tab="document">Documento</button>
   <button class="tab-btn" data-tab="direct">Texto Direto</button>
+  <button class="tab-btn" data-tab="vault">Cofre 🔒</button>
 </div>
 
 <div class="main">
+
+  <!-- ── VAULT BANNER ── -->
+  <div id="vault-banner" class="vault-banner">
+    <span>🔒 Suas senhas estão salvas.</span>
+    <button class="icon-btn" onclick="vaultUnlock()">Desbloquear cofre</button>
+  </div>
 
   <!-- ── LEVELS PANEL ── -->
   <div class="levels-panel">
@@ -707,7 +714,25 @@ Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
 
   </div><!-- /tab-direct -->
 
+  <!-- ══════════════ TAB: COFRE ══════════════ -->
+  <div class="tab-panel" id="tab-vault">
+    <div class="vault-panel">
+      <div id="vault-status-card"></div>
+    </div>
+  </div><!-- /tab-vault -->
+
 </div><!-- /main -->
+
+<!-- ── VAULT MODAL ── -->
+<div id="vault-modal-overlay" class="vault-modal-overlay" onclick="vaultModalBackdropClick(event)">
+  <div class="vault-modal">
+    <div class="vault-modal-header">
+      <span id="vault-modal-title">Cofre</span>
+      <button class="icon-btn" onclick="vaultHideModal()">✕</button>
+    </div>
+    <div class="vault-modal-body" id="vault-modal-body"></div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════
@@ -746,6 +771,402 @@ async function decryptText(b64, password) {
     key, bytes.slice(SALT_LEN + IV_LEN)
   );
   return new TextDecoder().decode(plain);
+}
+
+// ══════════════════════════════════════════════
+//  VAULT MANAGER
+// ══════════════════════════════════════════════
+
+const VAULT_STORAGE_KEY = 'secblocks_vault';
+const VAULT_PRF_LABEL   = new TextEncoder().encode('secblocks-vault-v1');
+const VAULT_RP_ID       = window.location.hostname || 'localhost';
+
+// ── Vault runtime state ──
+let vaultUnlocked  = false;
+let vaultPasswords = null;  // { L1: 'pwd', ... } when unlocked
+let vaultKey       = null;  // non-extractable CryptoKey, cleared on lock
+
+// ── Base64 / base64url helpers ──
+function b64ToBytes(b64) {
+  return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+}
+function bytesToB64(bytes) {
+  return btoa(String.fromCharCode(...bytes));
+}
+function b64urlToBytes(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  return Uint8Array.from(atob(s), c => c.charCodeAt(0));
+}
+function bytesToB64url(bytes) {
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+// ── Vault-specific AES-GCM (key pre-imported, no PBKDF2 inside) ──
+async function vaultImportKey(rawBytes) {
+  return crypto.subtle.importKey(
+    'raw', rawBytes, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+async function vaultEncryptPayload(payload, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(JSON.stringify(payload))
+  );
+  return { iv: bytesToB64(iv), blob: bytesToB64(new Uint8Array(ct)) };
+}
+async function vaultDecryptPayload(iv, blob, key) {
+  const plain = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: b64ToBytes(iv) },
+    key,
+    b64ToBytes(blob)
+  );
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+// ── localStorage ──
+function vaultLoad() {
+  try { return JSON.parse(localStorage.getItem(VAULT_STORAGE_KEY)); }
+  catch { return null; }
+}
+function vaultStore(data) {
+  localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(data));
+}
+
+// ── Modal UI ──
+function vaultShowModalContent(html) {
+  const overlay = document.getElementById('vault-modal-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('vault-modal-body').innerHTML =
+    `<p class="vault-modal-msg">${html}</p>`;
+}
+function vaultHideModal() {
+  document.getElementById('vault-modal-overlay').style.display = 'none';
+}
+function vaultModalBackdropClick(e) {
+  if (e.target === document.getElementById('vault-modal-overlay')) vaultHideModal();
+}
+
+// ── PIN prompt — returns Promise<string|null> ──
+function vaultPromptPin(title, hint, isSetup) {
+  return new Promise(resolve => {
+    document.getElementById('vault-modal-title').textContent = title;
+    document.getElementById('vault-modal-overlay').style.display = 'flex';
+
+    const confirmHtml = isSetup ? `
+      <div class="vault-pin-wrap">
+        <label>Confirmar PIN:</label>
+        <input type="password" id="vault-pin2" class="vault-pin-input"
+               placeholder="••••••" minlength="6" />
+      </div>` : '';
+
+    document.getElementById('vault-modal-body').innerHTML = `
+      ${hint ? `<p class="vault-modal-hint">${hint}</p>` : ''}
+      <div class="vault-pin-wrap">
+        <label>PIN (mín. 6 dígitos):</label>
+        <input type="password" id="vault-pin1" class="vault-pin-input"
+               placeholder="••••••" minlength="6" />
+      </div>
+      ${confirmHtml}
+      <p id="vault-pin-err" class="vault-pin-err" style="display:none"></p>
+      <div class="vault-modal-btns">
+        <button class="btn btn-vault" id="vault-pin-ok">Confirmar</button>
+        <button class="btn btn-ghost" id="vault-pin-cancel">Cancelar</button>
+      </div>
+    `;
+
+    const input1 = document.getElementById('vault-pin1');
+    input1.focus();
+
+    const showErr = msg => {
+      const el = document.getElementById('vault-pin-err');
+      el.textContent = msg; el.style.display = 'block';
+    };
+
+    document.getElementById('vault-pin-ok').onclick = () => {
+      const pin = input1.value;
+      if (pin.length < 6) return showErr('PIN deve ter no mínimo 6 dígitos.');
+      if (isSetup) {
+        const pin2 = document.getElementById('vault-pin2').value;
+        if (pin !== pin2) return showErr('PINs não coincidem.');
+      }
+      vaultHideModal();
+      resolve(pin);
+    };
+
+    document.getElementById('vault-pin-cancel').onclick = () => {
+      vaultHideModal(); resolve(null);
+    };
+
+    input1.addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('vault-pin-ok').click();
+    });
+  });
+}
+
+// ── Setup ──
+async function vaultSetup() {
+  const hasWebAuthn = window.PublicKeyCredential && window.isSecureContext;
+
+  if (!hasWebAuthn) {
+    // PIN-only
+    const pin = await vaultPromptPin('Definir PIN do cofre',
+      'Biometria não disponível neste contexto. Use um PIN de pelo menos 6 dígitos.', true);
+    if (!pin) return;
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key  = await deriveKey(pin, salt);
+    const { iv, blob } = await vaultEncryptPayload({}, key);
+    vaultStore({ version: 1, mode: 'pin', salt: bytesToB64(salt), iv, blob });
+    setStatus('✓ Cofre configurado com PIN.', 'ok');
+    vaultRenderState();
+    return;
+  }
+
+  // Try WebAuthn (PRF detected during credential creation)
+  vaultShowModalContent('Registrando credencial… toque no sensor ou chave de segurança quando solicitado.');
+
+  try {
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const userId    = crypto.getRandomValues(new Uint8Array(16));
+
+    const credential = await navigator.credentials.create({ publicKey: {
+      challenge,
+      rp: { name: 'SecBlocks', id: VAULT_RP_ID },
+      user: { id: userId, name: 'secblocks-user', displayName: 'SecBlocks User' },
+      pubKeyCredParams: [
+        { type: 'public-key', alg: -7 },
+        { type: 'public-key', alg: -257 }
+      ],
+      authenticatorSelection: { userVerification: 'preferred', residentKey: 'preferred' },
+      extensions: { prf: { eval: { first: VAULT_PRF_LABEL } } }
+    }});
+
+    const prfResult    = credential.getClientExtensionResults().prf?.results?.first;
+    const credentialId = bytesToB64url(new Uint8Array(credential.rawId));
+
+    if (prfResult) {
+      // PRF mode: key from PRF, no PIN needed
+      const key = await vaultImportKey(prfResult);
+      const { iv, blob } = await vaultEncryptPayload({}, key);
+      vaultStore({ version: 1, mode: 'prf', credentialId, iv, blob });
+      vaultHideModal();
+      setStatus('✓ Cofre configurado com biometria (PRF).', 'ok');
+    } else {
+      // Basic mode: WebAuthn as gate, PIN as key
+      const pin = await vaultPromptPin('Definir PIN de backup',
+        'Biometria disponível mas sem PRF. O PIN será a chave de cifração.', true);
+      if (!pin) { vaultHideModal(); return; }
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const key  = await deriveKey(pin, salt);
+      const { iv, blob } = await vaultEncryptPayload({}, key);
+      vaultStore({ version: 1, mode: 'basic', credentialId, salt: bytesToB64(salt), iv, blob });
+      setStatus('✓ Cofre configurado com WebAuthn + PIN.', 'ok');
+    }
+
+    vaultRenderState();
+
+  } catch (err) {
+    vaultHideModal();
+    if (err.name === 'NotAllowedError') {
+      // User cancelled biometric → offer PIN fallback
+      const pin = await vaultPromptPin('Definir PIN do cofre',
+        'Biometria cancelada. Configure um PIN para proteger o cofre.', true);
+      if (!pin) return;
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const key  = await deriveKey(pin, salt);
+      const { iv, blob } = await vaultEncryptPayload({}, key);
+      vaultStore({ version: 1, mode: 'pin', salt: bytesToB64(salt), iv, blob });
+      setStatus('✓ Cofre configurado com PIN.', 'ok');
+      vaultRenderState();
+    } else {
+      setStatus(`Erro ao configurar cofre: ${err.message}`, 'err');
+    }
+  }
+}
+
+function vaultShowSetupModal() {
+  document.getElementById('vault-modal-title').textContent = 'Configurar cofre';
+  vaultShowModalContent('Detectando capacidades do dispositivo…');
+  vaultSetup();
+}
+
+// ── Apply passwords to UI ──
+function applyVaultPasswords(passwords) {
+  for (const levelId of Object.keys(passwords)) {
+    if (!levels.find(l => l.id === levelId)) {
+      levels.push({ id: levelId, desc: `Nível ${levelId}` });
+      levels.sort((a, b) => levelNum(a.id) - levelNum(b.id));
+    }
+  }
+  renderLevels();
+  for (const [levelId, pwd] of Object.entries(passwords)) {
+    const el = document.getElementById('pass-' + levelId);
+    if (el) el.value = pwd;
+  }
+  updateLevelsSummary();
+}
+
+// ── Unlock ──
+async function vaultUnlock() {
+  const vault = vaultLoad();
+  if (!vault) return;
+
+  try {
+    let key;
+
+    if (vault.mode === 'prf') {
+      vaultShowModalContent('Toque no sensor ou chave de segurança para desbloquear…');
+      const assertion = await navigator.credentials.get({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rpId: VAULT_RP_ID,
+        allowCredentials: [{ type: 'public-key', id: b64urlToBytes(vault.credentialId) }],
+        userVerification: 'preferred',
+        extensions: { prf: { eval: { first: VAULT_PRF_LABEL } } }
+      }});
+      const prfResult = assertion.getClientExtensionResults().prf?.results?.first;
+      if (!prfResult) throw new Error('PRF não retornou resultado.');
+      key = await vaultImportKey(prfResult);
+      vaultHideModal();
+
+    } else if (vault.mode === 'basic') {
+      vaultShowModalContent('Toque no sensor para verificar presença…');
+      await navigator.credentials.get({ publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rpId: VAULT_RP_ID,
+        allowCredentials: [{ type: 'public-key', id: b64urlToBytes(vault.credentialId) }],
+        userVerification: 'preferred'
+      }});
+      vaultHideModal();
+      const pin = await vaultPromptPin('PIN do cofre', '', false);
+      if (!pin) return;
+      key = await deriveKey(pin, b64ToBytes(vault.salt));
+
+    } else { // pin
+      const pin = await vaultPromptPin('PIN do cofre', '', false);
+      if (!pin) return;
+      key = await deriveKey(pin, b64ToBytes(vault.salt));
+    }
+
+    const passwords = await vaultDecryptPayload(vault.iv, vault.blob, key);
+    vaultKey       = key;
+    vaultPasswords = passwords;
+    vaultUnlocked  = true;
+
+    applyVaultPasswords(passwords);
+    const count = Object.keys(passwords).length;
+    setStatus(`🔓 Cofre desbloqueado — ${count} nível(is) carregado(s).`, 'ok');
+    vaultRenderState();
+
+  } catch (err) {
+    vaultHideModal();
+    if (err.name !== 'NotAllowedError') {
+      setStatus(`Falha ao desbloquear: ${err.message}`, 'err');
+    }
+  }
+}
+
+// ── Save (requires vault already unlocked — reuses vaultKey) ──
+async function vaultSave() {
+  if (!vaultKey) return setStatus('Desbloqueie o cofre antes de salvar.', 'err');
+  const vault = vaultLoad();
+  if (!vault) return;
+
+  const passwords = {};
+  for (const lvl of levels) {
+    const pwd = getPassword(lvl.id);
+    if (pwd) passwords[lvl.id] = pwd;
+  }
+  if (Object.keys(passwords).length === 0)
+    return setStatus('Nenhuma senha configurada para salvar.', 'err');
+
+  const { iv, blob } = await vaultEncryptPayload(passwords, vaultKey);
+  vaultStore({ ...vault, iv, blob });
+  vaultPasswords = passwords;
+  const count = Object.keys(passwords).length;
+  setStatus(`✓ ${count} senha(s) salva(s) no cofre.`, 'ok');
+  vaultRenderState();
+}
+
+// ── Lock ──
+function vaultLock() {
+  vaultKey       = null;
+  vaultPasswords = null;
+  vaultUnlocked  = false;
+  for (const lvl of levels) {
+    const el = document.getElementById('pass-' + lvl.id);
+    if (el) el.value = '';
+  }
+  updateLevelsSummary();
+  setStatus('🔒 Cofre bloqueado.', '');
+  vaultRenderState();
+}
+
+// ── Remove ──
+function vaultRemove() {
+  if (!confirm('Remover o cofre permanentemente? As senhas salvas serão perdidas.')) return;
+  localStorage.removeItem(VAULT_STORAGE_KEY);
+  vaultKey = null; vaultPasswords = null; vaultUnlocked = false;
+  for (const lvl of levels) {
+    const el = document.getElementById('pass-' + lvl.id);
+    if (el) el.value = '';
+  }
+  updateLevelsSummary();
+  setStatus('Cofre removido.', '');
+  vaultRenderState();
+}
+
+// ── Render vault tab + banner based on current state ──
+function vaultRenderState() {
+  const vault  = vaultLoad();
+  const banner = document.getElementById('vault-banner');
+  const card   = document.getElementById('vault-status-card');
+  const tabBtn = document.querySelector('[data-tab="vault"]');
+  if (!banner || !card || !tabBtn) return;
+
+  if (!vault) {
+    banner.style.display = 'none';
+    tabBtn.textContent = 'Cofre 🔒';
+    card.innerHTML = `
+      <div class="vault-state-icon">🔒</div>
+      <p class="vault-state-title">Cofre não configurado</p>
+      <p class="vault-state-desc">Salve suas senhas protegidas por biometria ou PIN.</p>
+      <div class="vault-actions">
+        <button class="btn btn-vault" onclick="vaultShowSetupModal()">Configurar cofre</button>
+      </div>`;
+    return;
+  }
+
+  const modeLabel = { prf: 'biometria (PRF)', basic: 'WebAuthn + PIN', pin: 'PIN' }[vault.mode] || vault.mode;
+
+  if (!vaultUnlocked) {
+    banner.style.display = 'flex';
+    tabBtn.textContent = 'Cofre 🔒';
+    card.innerHTML = `
+      <div class="vault-state-icon">🔒</div>
+      <p class="vault-state-title">Cofre disponível</p>
+      <p class="vault-state-desc">Modo: <strong>${modeLabel}</strong></p>
+      <div class="vault-actions">
+        <button class="btn btn-vault" onclick="vaultUnlock()">Desbloquear</button>
+        <button class="btn btn-danger" onclick="vaultRemove()">Remover cofre</button>
+      </div>`;
+    return;
+  }
+
+  const count = vaultPasswords ? Object.keys(vaultPasswords).length : 0;
+  banner.style.display = 'none';
+  tabBtn.textContent = 'Cofre 🔓';
+  card.innerHTML = `
+    <div class="vault-state-icon">🔓</div>
+    <p class="vault-state-title">Cofre desbloqueado</p>
+    <p class="vault-state-desc">Modo: <strong>${modeLabel}</strong> · ${count} nível(is) carregado(s)</p>
+    <div class="vault-actions">
+      <button class="btn btn-vault" onclick="vaultSave()">Salvar no cofre</button>
+      <button class="btn btn-ghost" onclick="vaultLock()">Bloquear</button>
+      <button class="btn btn-danger" onclick="vaultRemove()">Remover cofre</button>
+    </div>`;
 }
 
 // ══════════════════════════════════════════════
@@ -1163,6 +1584,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // Init
 renderLevels();
+vaultRenderState();
 
 // PWA: Service Worker
 if ('serviceWorker' in navigator) {
