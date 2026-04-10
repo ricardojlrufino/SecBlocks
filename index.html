@@ -1118,6 +1118,14 @@ function vaultRemove() {
   vaultRenderState();
 }
 
+function setLevelsCollapsed(collapsed) {
+  const body = document.getElementById('levelsBody');
+  const chevron = document.getElementById('levelsChevron');
+  if (!body || !chevron) return;
+  body.classList.toggle('collapsed', collapsed);
+  chevron.classList.toggle('open', !collapsed);
+}
+
 // ── Render vault tab + banner based on current state ──
 function vaultRenderState() {
   const vault  = vaultLoad();
@@ -1127,6 +1135,7 @@ function vaultRenderState() {
   if (!banner || !card || !tabBtn) return;
 
   if (!vault) {
+    setLevelsCollapsed(false);
     banner.style.display = 'none';
     tabBtn.textContent = 'Cofre 🔒';
     card.innerHTML = `
@@ -1142,6 +1151,7 @@ function vaultRenderState() {
   const modeLabel = { prf: 'biometria (PRF)', basic: 'WebAuthn + PIN', pin: 'PIN' }[vault.mode] || vault.mode;
 
   if (!vaultUnlocked) {
+    setLevelsCollapsed(false);
     banner.style.display = 'flex';
     tabBtn.textContent = 'Cofre 🔒';
     card.innerHTML = `
@@ -1156,6 +1166,7 @@ function vaultRenderState() {
   }
 
   const count = vaultPasswords ? Object.keys(vaultPasswords).length : 0;
+  setLevelsCollapsed(true);
   banner.style.display = 'none';
   tabBtn.textContent = 'Cofre 🔓';
   card.innerHTML = `
