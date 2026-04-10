@@ -1,5 +1,13 @@
-const CACHE = 'secblocks-v1';
-const SHELL = ['./', './index.html', './manifest.json', './icons/icon.svg', './icons/icon-192.png'];
+const CACHE = 'secblocks-v3';
+const SHELL = [
+  './',
+  './index.html',
+  './styles.css',
+  './app.js',
+  '../manifest.json',
+  '../icons/icon.svg',
+  '../icons/icon-192.png',
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));

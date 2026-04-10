@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="SecBlocks" />
+  <link rel="apple-touch-icon" href="../icons/icon-192.png" />
+  <title>SecBlocks — Criptografar Markdown</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo"><span class="sec">Sec</span><span class="blocks">Blocks</span></div>
+    <div class="tagline">Criptografia multi-nível para documentos Markdown</div>
+  </div>
+  <div class="header-links">
+    <a href="https://github.com/ricardojlrufino/SecBlocks/releases" target="_blank" rel="noopener">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download CLI
+    </a>
+    <a href="https://github.com/ricardojlrufino/SecBlocks" target="_blank" rel="noopener">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="document">Documento</button>
+  <button class="tab-btn" data-tab="direct">Texto Direto</button>
+  <button class="tab-btn" data-tab="vault">Cofre 🔒</button>
+</div>
+
+<div class="main">
+
+  <!-- ── VAULT BANNER ── -->
+  <div id="vault-banner" class="vault-banner">
+    <span>🔒 Suas senhas estão salvas.</span>
+    <button class="icon-btn" onclick="vaultUnlock()">Desbloquear cofre</button>
+  </div>
+
+  <!-- ── LEVELS PANEL ── -->
+  <div class="levels-panel">
+    <div class="levels-header" onclick="toggleLevels()">
+      <div class="levels-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Níveis de Segurança
+        <span id="levelsSummary" style="font-weight:400;color:var(--muted);font-size:0.75rem;text-transform:none;letter-spacing:0;"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;" onclick="event.stopPropagation()">
+        <button class="icon-btn" onclick="openEnvFile()" title="Carregar senhas de um arquivo .env.secrets">📥 Carregar .env.secrets</button>
+        <input type="file" id="envFileInput" accept=".env.secrets,.env,text/plain" style="display:none" onchange="loadEnvFile(this)" />
+        <i class="chevron open" id="levelsChevron">▼</i>
+      </div>
+    </div>
+    <div class="levels-body" id="levelsBody">
+      <div id="levelsList"></div>
+
+      <!-- Add level form -->
+      <div class="add-level-row">
+        <input type="text" id="newLevelId" placeholder="ex: L5" maxlength="6"
+               style="text-transform:uppercase;font-weight:700;"
+               onkeydown="if(event.key==='Enter') addLevel()" />
+        <input type="text" id="newLevelDesc" placeholder="Descrição do nível..."
+               onkeydown="if(event.key==='Enter') addLevel()" />
+        <button class="icon-btn" onclick="addLevel()">+ Adicionar nível</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STATUS BAR ── -->
+  <div class="status-bar" id="statusBar">Pronto. Configure as senhas acima e cole o documento.</div>
+
+  <!-- ══════════════ TAB: DOCUMENTO ══════════════ -->
+  <div class="tab-panel active" id="tab-document">
+
+    <div class="help-box">
+      <h4>Sintaxe</h4>
+      <ul>
+        <li>Use <code>[SECRET_L1]texto[/SECRET_L1]</code> para cada nível configurado.</li>
+        <li>Criptografar converte para <code>[ENCRYPTED_L1]…[/ENCRYPTED_L1]</code> usando a senha do nível.</li>
+        <li>Níveis sem senha configurada são ignorados silenciosamente.</li>
+      </ul>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-encrypt" onclick="encryptDocument()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Criptografar
+      </button>
+      <button class="btn btn-decrypt" onclick="decryptDocument()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+        Descriptografar
+      </button>
+      <button class="btn btn-ghost" onclick="swapPanels()">⇄ Trocar</button>
+      <button class="btn btn-ghost" onclick="clearAll()">✕ Limpar</button>
+    </div>
+
+    <div class="editor-grid">
+      <div class="editor-box">
+        <div class="editor-header">
+          <span class="editor-title">Entrada</span>
+          <div style="display:flex;gap:5px;">
+            <button class="copy-btn" onclick="pasteFromClipboard()">⎘ Colar</button>
+            <button class="copy-btn" onclick="openFile()">📂 Abrir arquivo</button>
+            <input type="file" id="fileInput" accept=".md,.txt,text/plain,text/markdown"
+                   style="display:none" onchange="loadFile(this)" />
+          </div>
+        </div>
+        <textarea id="inputDoc" placeholder="Cole seu documento Markdown aqui...
+
+Exemplo:
+# Credenciais do sistema
+
+Senha app: [SECRET_L1]senha-do-app[/SECRET_L1]
+DB password: [SECRET_L2]db-pass-senior[/SECRET_L2]
+Deploy key: [SECRET_L3]chave-deploy-devops[/SECRET_L3]
+Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
+      </div>
+
+      <div class="editor-box">
+        <div class="editor-header">
+          <span class="editor-title">Saída</span>
+          <div style="display:flex;gap:5px;">
+            <button class="copy-btn" onclick="copyText('outputDoc')">⎘ Copiar tudo</button>
+          </div>
+        </div>
+        <textarea id="outputDoc" placeholder="O resultado aparecerá aqui..." readonly></textarea>
+      </div>
+    </div>
+
+  </div><!-- /tab-document -->
+
+  <!-- ══════════════ TAB: TEXTO DIRETO ══════════════ -->
+  <div class="tab-panel" id="tab-direct">
+
+    <div class="help-box">
+      <h4>Modo Texto Direto</h4>
+      <ul>
+        <li>Criptografe ou descriptografe texto avulso, sem precisar de um documento completo.</li>
+        <li>Selecione o nível desejado — a senha configurada para ele será usada.</li>
+        <li>Para descriptografar, cole o bloco <code>[ENCRYPTED_LX]…[/ENCRYPTED_LX]</code> — o nível é detectado automaticamente.</li>
+      </ul>
+    </div>
+
+    <div class="direct-grid">
+      <!-- ENCRYPT -->
+      <div class="direct-box box-encrypt">
+        <div class="direct-box-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <h3>Criptografar texto</h3>
+        </div>
+        <div class="direct-box-body">
+          <div class="level-select-wrap">
+            <label>Nível:</label>
+            <select id="directLevel"></select>
+          </div>
+
+          <textarea id="directPlain" placeholder="Digite o texto a criptografar..."></textarea>
+
+          <div class="row-btns">
+            <button class="btn btn-encrypt" onclick="directEncrypt()">Criptografar</button>
+            <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directEncResult')">⎘ Copiar</button>
+            <button id="shareBtn" class="copy-btn" style="padding:7px 12px;display:none;" onclick="shareDirectLink()">🔗 Compartilhar</button>
+          </div>
+
+          <div class="editor-header"><span class="editor-title">Resultado</span></div>
+          <textarea id="directEncResult" placeholder="[ENCRYPTED_LX]…[/ENCRYPTED_LX]"
+                    readonly style="min-height:80px;font-size:0.78rem;"></textarea>
+        </div>
+      </div>
+
+      <!-- DECRYPT -->
+      <div class="direct-box box-decrypt">
+        <div class="direct-box-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          <h3>Descriptografar texto</h3>
+        </div>
+        <div class="direct-box-body">
+          <p style="font-size:0.8rem;color:var(--muted);margin:0;">
+            O nível é detectado automaticamente pela tag. Se colar apenas base64, selecione o nível manualmente.
+          </p>
+
+          <div class="level-select-wrap">
+            <label>Nível (fallback):</label>
+            <select id="directDecLevel"></select>
+          </div>
+
+          <textarea id="directCipher"
+            placeholder="Cole [ENCRYPTED_L1]…[/ENCRYPTED_L1] ou outro nível..."></textarea>
+
+          <div class="row-btns">
+            <button class="btn btn-decrypt" onclick="directDecrypt()">Descriptografar</button>
+            <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directDecResult')">⎘ Copiar</button>
+          </div>
+
+          <div class="editor-header"><span class="editor-title">Resultado</span></div>
+          <textarea id="directDecResult" placeholder="Texto descriptografado aparecerá aqui..."
+                    readonly style="min-height:80px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-direct -->
+
+  <!-- ══════════════ TAB: COFRE ══════════════ -->
+  <div class="tab-panel" id="tab-vault">
+    <div class="vault-panel">
+      <div id="vault-status-card"></div>
+    </div>
+  </div><!-- /tab-vault -->
+
+</div><!-- /main -->
+
+<!-- ── VAULT MODAL ── -->
+<div id="vault-modal-overlay" class="vault-modal-overlay" onclick="vaultModalBackdropClick(event)">
+  <div class="vault-modal">
+    <div class="vault-modal-header">
+      <span id="vault-modal-title">Cofre</span>
+      <button class="icon-btn" onclick="vaultHideModal()">✕</button>
+    </div>
+    <div class="vault-modal-body" id="vault-modal-body"></div>
+  </div>
+</div>
+<script src="./app.js"></script>
+</body>
+</html>

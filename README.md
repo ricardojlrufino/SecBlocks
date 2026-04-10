@@ -8,7 +8,7 @@ Another use case is the use of shared links in public communication tools such a
 
 Comes in two flavors:
 
-- **Web UI** — `index.html`, runs entirely in the browser, zero dependencies, deep-links support
+- **Web UI** — `webui/index.html`, runs entirely in the browser with static assets, zero build step, deep-links support
 - **CLI** — Go binary, pipe-friendly, CI/CD ready
 
 ---
@@ -377,7 +377,11 @@ The binary wire format (`base64( salt | iv | ciphertext )`) is identical between
 
 ```
 .
-├── index.html          # Web UI (self-contained, no dependencies)
+├── index.html          # Compatibility entrypoint → redirects to webui/
+├── webui/
+│   ├── index.html      # Web UI markup
+│   ├── styles.css      # Web UI styles
+│   └── app.js          # Web UI behavior
 └── cli/
     ├── main.go
     ├── go.mod
@@ -392,4 +396,3 @@ The binary wire format (`base64( salt | iv | ciphertext )`) is identical between
         ├── env/        # .env.secrets parser + env var loader
         └── parser/     # [SECRET_LX] / [ENCRYPTED_LX] block processor
 ```
-
