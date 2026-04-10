@@ -1,6 +1,9 @@
 # SecBlocks
 
-Encrypt and decrypt sensitive blocks inside Markdown (or any text) documents using multi-level security. Each security level has its own password, so different team members can only decrypt what they are authorized to see.
+Encrypt and decrypt sensitive blocks inside Markdown (or any text) documents using multi-level security. Each security level has its own master-password, so different team members can only decrypt what they are authorized to see.
+
+The expected scenario is a team storing internal documentation (process docs, environment setup notes, team contact info, onboarding guides) in a private or semi-private repo ( on-premisse drive/git repo ).
+
 
 Comes in two flavors:
 
@@ -136,7 +139,7 @@ git ls-files -z "*.md" | xargs -0 git checkout-index --force
 - The CLI reads passwords from environment variables or a local file; passwords are never written to disk by the encrypt/decrypt commands.
 
 
---_
+---
 
 ## CLI
 
@@ -263,56 +266,8 @@ Passwords are entered per-level in the security panel at the top and never leave
 
 ## Useful scenarios
 
-### 0. Personal setup — home fallback
 
-Place your personal passwords in `~/.env.secrets` once. From that point, `secblocks` will always find them regardless of which project directory you are in, without any extra flags.
-
-```bash
-secblocks keygen -n 10 -o ~/.env.secrets
-chmod 600 ~/.env.secrets
-```
-
-Per-project overrides still work: if a `.env.secrets` exists in the current directory, its values take priority over the home file for the same level.
-
----
-
-### 1. Secrets in a git repository
-
-Keep a single `credentials.md` committed to the repo with all secrets encrypted. Only team members with the right `.env.secrets` can read their level.
-
-```bash
-# Developer workflow: read L1 secrets
-secblocks decrypt credentials.enc.md -e ~/.env.secrets | less
-
-# Admin workflow: read everything
-secblocks decrypt credentials.enc.md -e /vault/secblocks-admin.env
-```
-
-Add to `.gitignore`:
-
-```
-.env.secrets
-*.env.secrets
-```
-
----
-
-### 2. CI/CD pipeline — inject at deploy time
-
-Store each level password as a CI secret variable. The pipeline decrypts only the levels it needs:
-
-```yaml
-# GitHub Actions example
-- name: Decrypt L3 (DevOps) secrets
-  env:
-    SECRET_L3: ${{ secrets.SECRET_L3 }}
-  run: |
-    secblocks decrypt config/infra.enc.md -o config/infra.md
-```
-
----
-
-### 3. Partial decryption per role
+### Partial decryption per role
 
 A document can contain multiple levels simultaneously. Each person decrypts only what their password covers:
 
@@ -329,7 +284,7 @@ A developer with only `L1` configured will decrypt the username and see the `[EN
 
 ---
 
-### 4. Rotating a password for one level
+### Rotating a password for one level
 
 To rotate the L2 password without affecting other levels:
 
@@ -347,7 +302,7 @@ secblocks encrypt secrets.md -e new.env.secrets -o secrets.enc.md
 
 ---
 
-### 5. Onboarding a new team member
+### Onboarding a new team member
 
 Generate a new `.env.secrets` containing only the levels the person is authorized for:
 
@@ -360,7 +315,7 @@ John can decrypt L1 blocks and nothing else.
 
 ---
 
-### 6. Pipe with other tools
+### Pipe with other tools
 
 ```bash
 # Decrypt → view in less → re-encrypt on exit (simple secret viewer)
@@ -404,6 +359,11 @@ This means **the same plaintext encrypted with the same password always produces
 - **Nonce safety**: deriving IV from `HMAC(key, plaintext)` guarantees that different plaintexts under the same key always get different IVs, which is the critical requirement for AES-GCM safety. Nonce reuse only occurs if the same plaintext is re-encrypted with the same key — which by definition produces the same ciphertext and is therefore harmless.
 - **Equality leakage**: two blocks encrypted with the same password and the same plaintext will have identical ciphertext, revealing that they contain the same secret. This is an acceptable trade-off for a git-filter workflow where the primary threat model is preventing unauthorized readers from seeing the plaintext, not hiding equality between blocks.
 - **The authentication tag** (16 bytes, GCM default) guarantees that any tampering with the ciphertext is detected at decryption time.
+
+### Audit Status
+this tool has not been independently audited. The underlying cryptographic primitives come from Go libraries, but the protocol design, key derivation scheme, and implementation have not been reviewed by a third party -- **use this at your own risk**. 
+
+**Community review and feedback are welcome**.
 
 ### Compatibility
 
