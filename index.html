@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="SecBlocks" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>SecBlocks — Criptografar Markdown</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -257,22 +263,52 @@
     .editor-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 20px;
     }
     @media (max-width: 800px) { .editor-grid { grid-template-columns: 1fr; } }
 
-    .editor-box { display: flex; flex-direction: column; gap: 6px; }
+    .editor-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    /* ENTRADA — azul/roxo */
+    .editor-box:first-child { border-color: rgba(99,102,241,0.45); }
+    .editor-box:first-child .editor-header {
+      background: rgba(99,102,241,0.12);
+      border-bottom: 1px solid rgba(99,102,241,0.3);
+    }
+    .editor-box:first-child .editor-title { color: #818cf8; }
+
+    /* SAÍDA — verde */
+    .editor-box:last-child { border-color: rgba(16,185,129,0.4); }
+    .editor-box:last-child .editor-header {
+      background: rgba(16,185,129,0.1);
+      border-bottom: 1px solid rgba(16,185,129,0.3);
+    }
+    .editor-box:last-child .editor-title { color: #34d399; }
 
     .editor-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 10px 14px;
     }
     .editor-title {
-      font-size: 0.76rem;
-      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
+    }
+
+    .editor-box textarea {
+      border: none !important;
+      border-radius: 0 !important;
+      outline: none !important;
     }
 
     .copy-btn {
@@ -291,7 +327,7 @@
 
     textarea {
       flex: 1;
-      min-height: 360px;
+      min-height: 460px;
       resize: vertical;
       line-height: 1.6;
     }
@@ -330,13 +366,50 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .direct-box-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .direct-box-header svg { flex-shrink: 0; }
+    .direct-box-header h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.2px;
+    }
+    .direct-box-body {
       padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .direct-box h3 { font-size: 0.88rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
     .direct-box textarea { min-height: 110px; }
+
+    /* Encrypt — azul/roxo */
+    .direct-box.box-encrypt { border-color: rgba(99,102,241,0.45); }
+    .direct-box.box-encrypt .direct-box-header {
+      background: rgba(99,102,241,0.12);
+      border-bottom-color: rgba(99,102,241,0.3);
+    }
+    .direct-box.box-encrypt .direct-box-header h3 { color: #818cf8; }
+    .direct-box.box-encrypt .direct-box-header svg { color: #818cf8; }
+
+    /* Decrypt — verde */
+    .direct-box.box-decrypt { border-color: rgba(16,185,129,0.4); }
+    .direct-box.box-decrypt .direct-box-header {
+      background: rgba(16,185,129,0.1);
+      border-bottom-color: rgba(16,185,129,0.3);
+    }
+    .direct-box.box-decrypt .direct-box-header h3 { color: #34d399; }
+    .direct-box.box-decrypt .direct-box-header svg { color: #34d399; }
 
     .level-select-wrap {
       display: flex;
@@ -497,55 +570,59 @@ Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
 
     <div class="direct-grid">
       <!-- ENCRYPT -->
-      <div class="direct-box">
-        <h3>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Criptografar texto
-        </h3>
-
-        <div class="level-select-wrap">
-          <label>Nível:</label>
-          <select id="directLevel"></select>
+      <div class="direct-box box-encrypt">
+        <div class="direct-box-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <h3>Criptografar texto</h3>
         </div>
+        <div class="direct-box-body">
+          <div class="level-select-wrap">
+            <label>Nível:</label>
+            <select id="directLevel"></select>
+          </div>
 
-        <textarea id="directPlain" placeholder="Digite o texto a criptografar..."></textarea>
+          <textarea id="directPlain" placeholder="Digite o texto a criptografar..."></textarea>
 
-        <div class="row-btns">
-          <button class="btn btn-encrypt" onclick="directEncrypt()">Criptografar</button>
-          <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directEncResult')">⎘ Copiar</button>
+          <div class="row-btns">
+            <button class="btn btn-encrypt" onclick="directEncrypt()">Criptografar</button>
+            <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directEncResult')">⎘ Copiar</button>
+            <button id="shareBtn" class="copy-btn" style="padding:7px 12px;display:none;" onclick="shareDirectLink()">🔗 Compartilhar</button>
+          </div>
+
+          <div class="editor-header"><span class="editor-title">Resultado</span></div>
+          <textarea id="directEncResult" placeholder="[ENCRYPTED_LX]…[/ENCRYPTED_LX]"
+                    readonly style="min-height:80px;font-size:0.78rem;"></textarea>
         </div>
-
-        <div class="editor-header"><span class="editor-title">Resultado</span></div>
-        <textarea id="directEncResult" placeholder="[ENCRYPTED_LX]…[/ENCRYPTED_LX]"
-                  readonly style="min-height:80px;font-size:0.78rem;"></textarea>
       </div>
 
       <!-- DECRYPT -->
-      <div class="direct-box">
-        <h3>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-          Descriptografar texto
-        </h3>
-        <p style="font-size:0.8rem;color:var(--muted);">
-          O nível é detectado automaticamente pela tag. Se colar apenas base64, selecione o nível manualmente.
-        </p>
-
-        <div class="level-select-wrap">
-          <label>Nível (fallback):</label>
-          <select id="directDecLevel"></select>
+      <div class="direct-box box-decrypt">
+        <div class="direct-box-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          <h3>Descriptografar texto</h3>
         </div>
+        <div class="direct-box-body">
+          <p style="font-size:0.8rem;color:var(--muted);margin:0;">
+            O nível é detectado automaticamente pela tag. Se colar apenas base64, selecione o nível manualmente.
+          </p>
 
-        <textarea id="directCipher"
-          placeholder="Cole [ENCRYPTED_L1]…[/ENCRYPTED_L1] ou outro nível..."></textarea>
+          <div class="level-select-wrap">
+            <label>Nível (fallback):</label>
+            <select id="directDecLevel"></select>
+          </div>
 
-        <div class="row-btns">
-          <button class="btn btn-decrypt" onclick="directDecrypt()">Descriptografar</button>
-          <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directDecResult')">⎘ Copiar</button>
+          <textarea id="directCipher"
+            placeholder="Cole [ENCRYPTED_L1]…[/ENCRYPTED_L1] ou outro nível..."></textarea>
+
+          <div class="row-btns">
+            <button class="btn btn-decrypt" onclick="directDecrypt()">Descriptografar</button>
+            <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directDecResult')">⎘ Copiar</button>
+          </div>
+
+          <div class="editor-header"><span class="editor-title">Resultado</span></div>
+          <textarea id="directDecResult" placeholder="Texto descriptografado aparecerá aqui..."
+                    readonly style="min-height:80px;"></textarea>
         </div>
-
-        <div class="editor-header"><span class="editor-title">Resultado</span></div>
-        <textarea id="directDecResult" placeholder="Texto descriptografado aparecerá aqui..."
-                  readonly style="min-height:80px;"></textarea>
       </div>
     </div>
 
@@ -829,6 +906,7 @@ function clearAll() {
 // ══════════════════════════════════════════════
 
 async function directEncrypt() {
+  document.getElementById('shareBtn').style.display = 'none';
   const levelId = document.getElementById('directLevel').value;
   const pwd     = getPassword(levelId);
   if (!pwd) return setStatus(`Configure a senha para o nível ${levelId} acima.`, 'err');
@@ -841,10 +919,28 @@ async function directEncrypt() {
     const b64 = await encryptText(plain, pwd);
     document.getElementById('directEncResult').value =
       `[ENCRYPTED_${levelId}]${b64}[/ENCRYPTED_${levelId}]`;
+    document.getElementById('shareBtn').style.display = 'inline-flex';
     setStatus(`✓ Texto criptografado como ${levelId}.`, 'ok');
   } catch (e) {
     setStatus('Erro: ' + e.message, 'err');
   }
+}
+
+function shareDirectLink() {
+  const result = document.getElementById('directEncResult').value.trim();
+  const match  = result.match(/\[ENCRYPTED_(L\d+)\]([\s\S]*?)\[\/ENCRYPTED_\1\]/i);
+  if (!match) return setStatus('Nenhum resultado para compartilhar.', 'err');
+
+  const uri = `web+secblocks://${match[1]}/${match[2].trim()}`;
+  const btn = document.getElementById('shareBtn');
+
+  navigator.clipboard.writeText(uri).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => {
+    setStatus(`Link: ${uri}`, 'ok');
+  });
 }
 
 async function directDecrypt() {
@@ -988,6 +1084,64 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // Init
 renderLevels();
+
+// PWA: Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
+}
+
+// PWA: Protocol Handler (fallback para Firefox e browsers sem manifest protocol_handlers)
+if ('registerProtocolHandler' in navigator) {
+  try {
+    navigator.registerProtocolHandler(
+      'web+secblocks',
+      window.location.origin + window.location.pathname + '?uri=%s'
+    );
+  } catch(e) { /* silently ignore file://, iframes, etc */ }
+}
+
+// Deep Link: ?uri=web+secblocks://LEVEL/BASE64
+(function handleDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const rawUri = params.get('uri');
+  if (!rawUri) return;
+
+  // Double-decode guard (Windows pode double-encode)
+  let uri = rawUri;
+  try { uri = decodeURIComponent(uri); } catch {}
+  if (uri.includes('%')) { try { uri = decodeURIComponent(uri); } catch {} }
+
+  const match = uri.match(/^web\+secblocks:\/\/([^\/]+)\/(.+)$/i);
+  if (!match) return setStatus('Deep link inválido.', 'err');
+
+  const level = match[1].toUpperCase();  // ex: "L1"
+  const b64   = match[2];               // base64 data
+
+  // Preenche o textarea com o bloco completo
+  const block = `[ENCRYPTED_${level}]${b64}[/ENCRYPTED_${level}]`;
+  const cipherEl = document.getElementById('directCipher');
+  if (cipherEl) cipherEl.value = block;
+
+  // Seleciona o nível no fallback select
+  const decLevelEl = document.getElementById('directDecLevel');
+  if (decLevelEl) {
+    const opt = [...decLevelEl.options].find(o => o.value === level);
+    if (opt) decLevelEl.value = level;
+  }
+
+  // Muda para aba "Texto Direto"
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-tab="direct"]')?.classList.add('active');
+  document.getElementById('tab-direct')?.classList.add('active');
+
+  setStatus(`🔗 Link recebido — nível ${level}. Configure a senha e clique Descriptografar.`, 'ok');
+
+  // Auto-descriptografa se a senha já estiver configurada
+  if (getPassword(level)) {
+    setTimeout(() => directDecrypt(), 80);
+  }
+})();
 </script>
 </body>
 </html>

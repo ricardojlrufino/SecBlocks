@@ -1,13 +1,14 @@
 # SecBlocks (**alpha)
 
-Encrypt and decrypt sensitive blocks inside Markdown (or any text) documents using multi-level security. Each security level has its own master-password, so different team members can only decrypt what they are authorized to see.
+Encrypt and decrypt sensitive blocks inside Markdown (or any text) documents or shared links using multi-level security. Each security level has its own master-password, so different team members can only decrypt what they are authorized to see.
 
 The expected scenario is a team storing internal documentation (process docs, environment setup notes, team contact info, onboarding guides) in a private or semi-private repo ( on-premisse drive/git repo ).
 
+Another use case is the use of shared links in public communication tools such as Slack, Discord, and WhatsApp with deep-links.
 
 Comes in two flavors:
 
-- **Web UI** — `index.html`, runs entirely in the browser, zero dependencies
+- **Web UI** — `index.html`, runs entirely in the browser, zero dependencies, deep-links support
 - **CLI** — Go binary, pipe-friendly, CI/CD ready
 
 ---
@@ -48,6 +49,45 @@ The document structure, comments, and non-secret content are preserved verbatim.
 Levels are completely arbitrary — use whatever numbering makes sense for your organization. Each level uses an independent AES-GCM-256 key derived from its own password via PBKDF2-SHA256 (200 000 iterations).
 
 The encrypted format is **identical** between the CLI and the Web UI, so you can encrypt with one and decrypt with the other interchangeably.
+
+---
+
+
+## Web UI
+
+Open `https://ricardojlrufino.github.io/SecBlocks/` in any modern browser. 
+
+- **Document tab** — paste or open a Markdown file, encrypt/decrypt all levels at once
+- **Direct text tab** — encrypt or decrypt a single value without a full document
+
+Passwords are entered per-level in the security panel at the top and never leave the browser.
+
+### Sharing encrypted content via deep link
+
+The **Direct text tab** doubles as a secure sharing tool. After encrypting a value, click **🔗 Compartilhar** to copy a shareable link to the clipboard:
+
+```
+web+secblocks://L1/X+jz3W02h0...bAg==
+```
+
+Send that link over any channel — Slack, Discord, WhatsApp, email. When the recipient opens it in a browser with SecBlocks installed as a PWA:
+
+1. The Direct text tab opens automatically
+2. The encrypted block is filled in
+3. If their level password is already configured, decryption runs immediately
+
+The recipient never sees raw ciphertext or tags — just the link, then the plaintext. The secret travels as opaque base64; the password never does.
+
+#### Installing SecBlocks as a PWA
+
+To open `web+secblocks://` links automatically, install SecBlocks as a Progressive Web App:
+
+1. Open **https://ricardojlrufino.github.io/SecBlocks/** in Chrome or Edge
+2. Look for the **install icon** (➕) in the browser address bar and click it
+3. Confirm the installation prompt — SecBlocks will appear as a standalone app
+4. From this point on, any `web+secblocks://` link will open SecBlocks directly
+
+> Firefox does not support PWA installation on desktop. On Android, use Chrome and tap **Add to Home screen** from the browser menu.
 
 ---
 
@@ -250,17 +290,6 @@ SECRET_L1=pass1 SECRET_L3=pass3 secblocks decrypt doc.enc.md
 # Point to a specific file (must exist)
 secblocks decrypt doc.enc.md --env /run/secrets/.env.secrets
 ```
-
----
-
-## Web UI
-
-Open `index.html` in any modern browser. No server, no build step, no internet connection required.
-
-- **Document tab** — paste or open a Markdown file, encrypt/decrypt all levels at once
-- **Direct text tab** — encrypt or decrypt a single value without a full document
-
-Passwords are entered per-level in the security panel at the top and never leave the browser.
 
 ---
 
