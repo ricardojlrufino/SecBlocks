@@ -33,11 +33,7 @@ Root token: [ENCRYPTED_L10]nFrnchBlnd3RQlo...umti[/ENCRYPTED_L10]
 
 The document structure, comments, and non-secret content are preserved verbatim. Only the content inside the tags is touched.
 
-## Example on Git
-
-![](https://github.com/user-attachments/assets/2e33dda1-17a3-4747-945e-f0629c2f6c56)
-
-### Security levels
+### Security levels/blocks
 
 | Tag | Suggested audience |
 |---|---|
