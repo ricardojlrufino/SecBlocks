@@ -46,6 +46,7 @@
     }
     .header-links a:hover { color: var(--accent); border-color: var(--accent); }
     .header-links a svg { flex-shrink: 0; }
+    @media (max-width: 600px) { .header-links a.desktop-only { display: none; } }
 
     /* ── Tabs ── */
     .tabs {
@@ -200,6 +201,29 @@
       margin-top: 4px;
     }
     .add-level-row input[type="text"] { font-size: 0.85rem; }
+
+    @media (max-width: 600px) {
+      /* level-row: badge + info na 1ª linha, senha abaixo; delete oculto */
+      .level-row {
+        grid-template-columns: auto 1fr;
+      }
+      .level-row .icon-btn.del { display: none; }
+      .level-pass-wrap {
+        grid-column: 1 / -1;
+        min-width: 0;
+      }
+
+      /* add-level: inputs na 1ª linha, botão na 2ª */
+      .add-level-row {
+        grid-template-columns: 70px 1fr;
+      }
+      .add-level-row .icon-btn {
+        grid-column: 1 / -1;
+      }
+
+      /* header: permite quebrar se necessário */
+      .levels-header { flex-wrap: wrap; gap: 8px; }
+    }
 
     /* ── Status bar ── */
     .status-bar {
