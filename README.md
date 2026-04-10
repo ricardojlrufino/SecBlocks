@@ -1,4 +1,4 @@
-# SecBlocks
+# SecBlocks (**alpha)
 
 Encrypt and decrypt sensitive blocks inside Markdown (or any text) documents using multi-level security. Each security level has its own master-password, so different team members can only decrypt what they are authorized to see.
 
