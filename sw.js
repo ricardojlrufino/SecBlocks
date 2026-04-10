@@ -1,12 +1,12 @@
-const CACHE = 'secblocks-v3';
+const CACHE = 'secblocks-v4';
 const SHELL = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
-  '../manifest.json',
-  '../icons/icon.svg',
-  '../icons/icon-192.png',
+  './webui/styles.css',
+  './webui/app.js',
+  './manifest.json',
+  './icons/icon.svg',
+  './icons/icon-192.png',
 ];
 
 self.addEventListener('install', e => {

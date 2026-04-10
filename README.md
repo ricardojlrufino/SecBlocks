@@ -4,7 +4,7 @@ Encrypt and decrypt sensitive blocks inside Markdown (or any text) documents or 
 
 The expected scenario is a team storing internal documentation (process docs, environment setup notes, team contact info, onboarding guides) in a private or semi-private repo ( on-premisse drive/git repo ).
 
-Another use case is the use of shared links in public communication tools such as Slack, Discord, and WhatsApp with deep-links.
+Another use case is the use of shared links in public communication tools such as Slack, Discord, and WhatsApp with [deep-links](./USER_GUIDE-DEEP_LINKS-ptBR.md).
 
 Comes in two flavors:
 
