@@ -68,7 +68,7 @@ Esse é o fluxo recomendado para Slack, Discord, WhatsApp ou e-mail.
 O SecBlocks vai gerar um link como:
 
 ```text
-https://ricardojlrufino.github.io/SecBlocks#?data=L1.X-jz3W02h0...bAg
+https://ricardojlrufino.github.io/SecBlocks#?secret=L1.X-jz3W02h0...bAg
 ```
 
 O link é copiado para a área de transferência e exibido no campo de resultado.

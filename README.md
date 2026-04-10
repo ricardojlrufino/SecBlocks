@@ -67,7 +67,7 @@ Passwords are entered per-level in the security panel at the top and never leave
 The **Direct text tab** doubles as a secure sharing tool. After encrypting a value, click **🔗 Compartilhar** to copy a shareable link to the clipboard:
 
 ```
-https://ricardojlrufino.github.io/SecBlocks#?data=L1.X-jz3W02h0...bAg
+https://ricardojlrufino.github.io/SecBlocks#?secret=L1.X-jz3W02h0...bAg
 ```
 
 Send that link over any channel — Slack, Discord, WhatsApp, email. The link is a standard HTTPS URL, so it works in any browser without installing anything. When the recipient opens it:
@@ -77,7 +77,7 @@ Send that link over any channel — Slack, Discord, WhatsApp, email. The link is
 3. If a vault is configured, the unlock prompt is triggered automatically
 4. If the level password is already available, decryption runs immediately
 
-The recipient never sees raw ciphertext or tags — just the link, then the plaintext. The secret travels as opaque base64url in the URL fragment; the password never does. The fragment (`#?data=…`) is never sent to the server.
+The recipient never sees raw ciphertext or tags — just the link, then the plaintext. The secret travels as opaque base64url in the URL fragment; the password never does. The fragment (`#?secret=…`) is never sent to the server.
 
 #### Installing SecBlocks as a PWA (optional)
 

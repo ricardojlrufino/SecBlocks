@@ -707,16 +707,37 @@ function shareDirectLink() {
   const level  = match[1];
   const b64url = match[2].trim().replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   const base   = window.location.origin + window.location.pathname.replace(/\/+$/, '');
-  const url    = `${base}#?data=${level}.${b64url}`;
+  const url    = `${base}#?secret=${level}.${b64url}`;
 
   document.getElementById('directEncResult').value = url;
+  navigator.clipboard.writeText(url).catch(() => {});
 
-  const btn = document.getElementById('shareBtn');
-  navigator.clipboard.writeText(url).then(() => {
-    const orig = btn.textContent;
-    btn.textContent = '✓ Copiado!';
-    setTimeout(() => { btn.textContent = orig; }, 2000);
-  }).catch(() => {});
+  // Modal com QR Code
+  document.getElementById('vault-modal-title').textContent = '🔗 Compartilhar link';
+  document.getElementById('vault-modal-body').innerHTML = `
+    <div style="display:flex;justify-content:center;padding:8px 0;">
+      <div id="share-qr" style="background:#fff;padding:12px;border-radius:6px;"></div>
+    </div>
+    <p style="font-size:0.75rem;color:var(--muted);word-break:break-all;margin:0;">${url}</p>
+    <div class="vault-modal-btns">
+      <button class="btn btn-vault" id="share-copy-btn">⎘ Copiar link</button>
+    </div>`;
+  document.getElementById('vault-modal-overlay').style.display = 'flex';
+
+  new QRCode(document.getElementById('share-qr'), {
+    text: url, width: 220, height: 220,
+    colorDark: '#000000', colorLight: '#ffffff',
+  });
+
+  document.getElementById('share-copy-btn').onclick = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('share-copy-btn');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    });
+  };
+
   setStatus('🔗 Link copiado!', 'ok');
 }
 
@@ -869,12 +890,12 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
 }
 
-// Deep Link: #?data=LEVEL.BASE64URL
+// Deep Link: #?secret=LEVEL.BASE64URL
 (async function handleDeepLink() {
   const hash = window.location.hash;
-  if (!hash.startsWith('#?data=')) return;
+  if (!hash.startsWith('#?secret=')) return;
 
-  const raw = hash.slice('#?data='.length);
+  const raw = hash.slice('#?secret='.length);
   const dot = raw.indexOf('.');
   if (dot === -1) return setStatus('Link inválido.', 'err');
 
