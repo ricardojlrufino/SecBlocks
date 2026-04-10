@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecBlocks — Criptografar Markdown</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c63ff;
+      --success: #00d4aa;
+      --danger: #ff4d6d;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --font: 'Segoe UI', system-ui, sans-serif;
+      --mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo { font-size: 1.45rem; font-weight: 800; letter-spacing: -1px; }
+    .logo .sec { color: var(--accent); }
+    .logo .blocks { color: #f59e0b; }
+    .tagline { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+    .tab-btn {
+      padding: 11px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font);
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .main { flex: 1; padding: 20px 24px; max-width: 1280px; margin: 0 auto; width: 100%; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Levels panel ── */
+    .levels-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .levels-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 16px;
+      cursor: pointer;
+      user-select: none;
+      gap: 10px;
+    }
+    .levels-header:hover { background: var(--surface2); }
+
+    .levels-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .levels-body {
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .levels-body.collapsed { display: none; }
+
+    .level-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .level-badge {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 5px;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    .level-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+    .level-desc {
+      font-size: 0.82rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .level-tag {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .level-pass-wrap {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      min-width: 200px;
+    }
+
+    input[type="password"], input[type="text"], textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+
+    .icon-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.82rem;
+      padding: 6px 9px;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--text); }
+    .icon-btn.del:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* Add-level form */
+    .add-level-row {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding-top: 4px;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .add-level-row input[type="text"] { font-size: 0.85rem; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+      min-height: 37px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-bar.ok   { border-color: var(--success); color: var(--success); }
+    .status-bar.err  { border-color: var(--danger);  color: var(--danger);  }
+    .status-bar.info { border-color: var(--accent);  color: var(--accent);  }
+
+    /* ── Action buttons ── */
+    .actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+    .btn {
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-family: var(--font);
+      font-weight: 600;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; filter: none !important; }
+
+    .btn-encrypt { background: var(--accent); color: #fff; }
+    .btn-decrypt { background: var(--success); color: #0f1117; }
+    .btn-ghost {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── Editor ── */
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 800px) { .editor-grid { grid-template-columns: 1fr; } }
+
+    .editor-box { display: flex; flex-direction: column; gap: 6px; }
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .editor-title {
+      font-size: 0.76rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.72rem;
+      padding: 3px 9px;
+      transition: all 0.2s;
+      font-family: var(--font);
+    }
+    .copy-btn:hover { border-color: var(--success); color: var(--success); }
+    .copy-btn.copied { border-color: var(--success); color: var(--success); }
+
+    textarea {
+      flex: 1;
+      min-height: 360px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    /* ── Help box ── */
+    .help-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 17px;
+      margin-bottom: 14px;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .help-box h4 { color: var(--text); margin-bottom: 6px; font-size: 0.86rem; }
+    .help-box code {
+      font-family: var(--mono);
+      background: var(--surface2);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.79rem;
+      color: var(--accent);
+    }
+    .help-box ul { padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+
+    /* ── Direct mode ── */
+    .direct-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 800px) { .direct-grid { grid-template-columns: 1fr; } }
+
+    .direct-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .direct-box h3 { font-size: 0.88rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .direct-box textarea { min-height: 110px; }
+
+    .level-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .level-select-wrap label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+    select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      padding: 6px 10px;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus { border-color: var(--accent); }
+
+    .row-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* chevron */
+    .chevron { transition: transform 0.2s; font-style: normal; font-size: 0.75rem; color: var(--muted); }
+    .chevron.open { transform: rotate(180deg); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo"><span class="sec">Sec</span><span class="blocks">Blocks</span></div>
+    <div class="tagline">Criptografia multi-nível para documentos Markdown</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="document">Documento</button>
+  <button class="tab-btn" data-tab="direct">Texto Direto</button>
+</div>
+
+<div class="main">
+
+  <!-- ── LEVELS PANEL ── -->
+  <div class="levels-panel">
+    <div class="levels-header" onclick="toggleLevels()">
+      <div class="levels-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Níveis de Segurança
+        <span id="levelsSummary" style="font-weight:400;color:var(--muted);font-size:0.75rem;text-transform:none;letter-spacing:0;"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;" onclick="event.stopPropagation()">
+        <button class="icon-btn" onclick="openEnvFile()" title="Carregar senhas de um arquivo .env">📥 Carregar .env</button>
+        <input type="file" id="envFileInput" accept=".env,text/plain" style="display:none" onchange="loadEnvFile(this)" />
+        <i class="chevron open" id="levelsChevron">▼</i>
+      </div>
+    </div>
+    <div class="levels-body" id="levelsBody">
+      <div id="levelsList"></div>
+
+      <!-- Add level form -->
+      <div class="add-level-row">
+        <input type="text" id="newLevelId" placeholder="ex: L5" maxlength="6"
+               style="text-transform:uppercase;font-weight:700;"
+               onkeydown="if(event.key==='Enter') addLevel()" />
+        <input type="text" id="newLevelDesc" placeholder="Descrição do nível..."
+               onkeydown="if(event.key==='Enter') addLevel()" />
+        <button class="icon-btn" onclick="addLevel()">+ Adicionar nível</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STATUS BAR ── -->
+  <div class="status-bar" id="statusBar">Pronto. Configure as senhas acima e cole o documento.</div>
+
+  <!-- ══════════════ TAB: DOCUMENTO ══════════════ -->
+  <div class="tab-panel active" id="tab-document">
+
+    <div class="help-box">
+      <h4>Sintaxe</h4>
+      <ul>
+        <li>Use <code>[SECRET_L1]texto[/SECRET_L1]</code> para cada nível configurado.</li>
+        <li>Criptografar converte para <code>[ENCRYPTED_L1]…[/ENCRYPTED_L1]</code> usando a senha do nível.</li>
+        <li>Níveis sem senha configurada são ignorados silenciosamente.</li>
+      </ul>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-encrypt" onclick="encryptDocument()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Criptografar
+      </button>
+      <button class="btn btn-decrypt" onclick="decryptDocument()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+        Descriptografar
+      </button>
+      <button class="btn btn-ghost" onclick="swapPanels()">⇄ Trocar</button>
+      <button class="btn btn-ghost" onclick="clearAll()">✕ Limpar</button>
+    </div>
+
+    <div class="editor-grid">
+      <div class="editor-box">
+        <div class="editor-header">
+          <span class="editor-title">Entrada</span>
+          <div style="display:flex;gap:5px;">
+            <button class="copy-btn" onclick="pasteFromClipboard()">⎘ Colar</button>
+            <button class="copy-btn" onclick="openFile()">📂 Abrir arquivo</button>
+            <input type="file" id="fileInput" accept=".md,.txt,text/plain,text/markdown"
+                   style="display:none" onchange="loadFile(this)" />
+          </div>
+        </div>
+        <textarea id="inputDoc" placeholder="Cole seu documento Markdown aqui...
+
+Exemplo:
+# Credenciais do sistema
+
+Senha app: [SECRET_L1]senha-do-app[/SECRET_L1]
+DB password: [SECRET_L2]db-pass-senior[/SECRET_L2]
+Deploy key: [SECRET_L3]chave-deploy-devops[/SECRET_L3]
+Master root: [SECRET_L4]senha-raiz-admin[/SECRET_L4]"></textarea>
+      </div>
+
+      <div class="editor-box">
+        <div class="editor-header">
+          <span class="editor-title">Saída</span>
+          <div style="display:flex;gap:5px;">
+            <button class="copy-btn" onclick="copyText('outputDoc')">⎘ Copiar tudo</button>
+          </div>
+        </div>
+        <textarea id="outputDoc" placeholder="O resultado aparecerá aqui..." readonly></textarea>
+      </div>
+    </div>
+
+  </div><!-- /tab-document -->
+
+  <!-- ══════════════ TAB: TEXTO DIRETO ══════════════ -->
+  <div class="tab-panel" id="tab-direct">
+
+    <div class="help-box">
+      <h4>Modo Texto Direto</h4>
+      <ul>
+        <li>Criptografe ou descriptografe texto avulso, sem precisar de um documento completo.</li>
+        <li>Selecione o nível desejado — a senha configurada para ele será usada.</li>
+        <li>Para descriptografar, cole o bloco <code>[ENCRYPTED_LX]…[/ENCRYPTED_LX]</code> — o nível é detectado automaticamente.</li>
+      </ul>
+    </div>
+
+    <div class="direct-grid">
+      <!-- ENCRYPT -->
+      <div class="direct-box">
+        <h3>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Criptografar texto
+        </h3>
+
+        <div class="level-select-wrap">
+          <label>Nível:</label>
+          <select id="directLevel"></select>
+        </div>
+
+        <textarea id="directPlain" placeholder="Digite o texto a criptografar..."></textarea>
+
+        <div class="row-btns">
+          <button class="btn btn-encrypt" onclick="directEncrypt()">Criptografar</button>
+          <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directEncResult')">⎘ Copiar</button>
+        </div>
+
+        <div class="editor-header"><span class="editor-title">Resultado</span></div>
+        <textarea id="directEncResult" placeholder="[ENCRYPTED_LX]…[/ENCRYPTED_LX]"
+                  readonly style="min-height:80px;font-size:0.78rem;"></textarea>
+      </div>
+
+      <!-- DECRYPT -->
+      <div class="direct-box">
+        <h3>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          Descriptografar texto
+        </h3>
+        <p style="font-size:0.8rem;color:var(--muted);">
+          O nível é detectado automaticamente pela tag. Se colar apenas base64, selecione o nível manualmente.
+        </p>
+
+        <div class="level-select-wrap">
+          <label>Nível (fallback):</label>
+          <select id="directDecLevel"></select>
+        </div>
+
+        <textarea id="directCipher"
+          placeholder="Cole [ENCRYPTED_L1]…[/ENCRYPTED_L1] ou outro nível..."></textarea>
+
+        <div class="row-btns">
+          <button class="btn btn-decrypt" onclick="directDecrypt()">Descriptografar</button>
+          <button class="copy-btn" style="padding:7px 12px;" onclick="copyText('directDecResult')">⎘ Copiar</button>
+        </div>
+
+        <div class="editor-header"><span class="editor-title">Resultado</span></div>
+        <textarea id="directDecResult" placeholder="Texto descriptografado aparecerá aqui..."
+                  readonly style="min-height:80px;"></textarea>
+      </div>
+    </div>
+
+  </div><!-- /tab-direct -->
+
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════════════
+//  CRYPTO  (AES-GCM 256 + PBKDF2 SHA-256)
+// ══════════════════════════════════════════════
+
+const SALT_LEN = 16, IV_LEN = 12, ITER = 200_000;
+
+async function deriveKey(password, salt) {
+  const km = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, hash: 'SHA-256', iterations: ITER },
+    km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptText(plaintext, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_LEN));
+  const iv   = crypto.getRandomValues(new Uint8Array(IV_LEN));
+  const key  = await deriveKey(password, salt);
+  const buf  = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext)
+  );
+  const out = new Uint8Array(SALT_LEN + IV_LEN + buf.byteLength);
+  out.set(salt, 0); out.set(iv, SALT_LEN); out.set(new Uint8Array(buf), SALT_LEN + IV_LEN);
+  return btoa(String.fromCharCode(...out));
+}
+
+async function decryptText(b64, password) {
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const key   = await deriveKey(password, bytes.slice(0, SALT_LEN));
+  const plain = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: bytes.slice(SALT_LEN, SALT_LEN + IV_LEN) },
+    key, bytes.slice(SALT_LEN + IV_LEN)
+  );
+  return new TextDecoder().decode(plain);
+}
+
+// ══════════════════════════════════════════════
+//  LEVELS STATE
+// ══════════════════════════════════════════════
+
+let levels = [
+  { id: 'L1',  desc: 'Desenvolvedores e equipe de suporte' },
+  { id: 'L2',  desc: 'Desenvolvedor sênior autorizado'     },
+  { id: 'L3',  desc: 'DevOps'                              },
+  { id: 'L10', desc: 'Apenas administradores'              },
+];
+
+// Returns password from the DOM input for a given level id
+function getPassword(levelId) {
+  const el = document.getElementById('pass-' + levelId);
+  return el ? el.value.trim() : '';
+}
+
+// Numeric extraction for sorting / color
+function levelNum(id) {
+  return parseInt(id.replace(/[^0-9]/g, '')) || 0;
+}
+
+// Color: green (L1) → yellow (L5) → red (L10+)
+function levelColor(id) {
+  const n = Math.min(levelNum(id), 10);
+  const hue = Math.round(120 - (n / 10) * 120);
+  return `hsl(${hue}, 75%, 55%)`;
+}
+
+function levelBg(id) {
+  const n = Math.min(levelNum(id), 10);
+  const hue = Math.round(120 - (n / 10) * 120);
+  return `hsla(${hue}, 75%, 55%, 0.12)`;
+}
+
+// ══════════════════════════════════════════════
+//  RENDER LEVELS
+// ══════════════════════════════════════════════
+
+function renderLevels() {
+  const list = document.getElementById('levelsList');
+  list.innerHTML = '';
+
+  levels.forEach(lvl => {
+    const color = levelColor(lvl.id);
+    const bg    = levelBg(lvl.id);
+    const row   = document.createElement('div');
+    row.className = 'level-row';
+    row.id = 'row-' + lvl.id;
+    row.innerHTML = `
+      <span class="level-badge" style="color:${color};background:${bg};border:1px solid ${color}40;">${lvl.id}</span>
+      <div class="level-info">
+        <span class="level-desc">${lvl.desc}</span>
+        <span class="level-tag">[SECRET_${lvl.id}] → [ENCRYPTED_${lvl.id}]</span>
+      </div>
+      <div class="level-pass-wrap">
+        <input type="password" id="pass-${lvl.id}" placeholder="Senha ${lvl.id}..." autocomplete="off" />
+        <button class="icon-btn" onclick="toggleLevelPass('${lvl.id}', this)" title="Mostrar/ocultar">👁</button>
+      </div>
+      <button class="icon-btn del" onclick="removeLevel('${lvl.id}')" title="Remover nível">✕</button>
+    `;
+    list.appendChild(row);
+  });
+
+  updateLevelsSummary();
+  renderDirectSelects();
+}
+
+function updateLevelsSummary() {
+  const total    = levels.length;
+  const withPass = levels.filter(l => getPassword(l.id)).length;
+  document.getElementById('levelsSummary').textContent =
+    `${total} nível${total !== 1 ? 'is' : ''} · ${withPass} com senha`;
+}
+
+function renderDirectSelects() {
+  ['directLevel', 'directDecLevel'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = levels.map(l =>
+      `<option value="${l.id}">${l.id} — ${l.desc}</option>`
+    ).join('');
+    if (prev && levels.find(l => l.id === prev)) sel.value = prev;
+  });
+}
+
+function toggleLevelPass(id, btn) {
+  const el = document.getElementById('pass-' + id);
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? '👁' : '🙈';
+}
+
+function addLevel() {
+  let id   = document.getElementById('newLevelId').value.trim().toUpperCase();
+  const desc = document.getElementById('newLevelDesc').value.trim();
+  if (!id) return setStatus('Informe o ID do nível (ex: L5).', 'err');
+  if (!id.startsWith('L')) id = 'L' + id;
+  if (levels.find(l => l.id === id)) return setStatus(`Nível ${id} já existe.`, 'err');
+
+  levels.push({ id, desc: desc || `Nível ${id}` });
+  // Sort by numeric value
+  levels.sort((a, b) => levelNum(a.id) - levelNum(b.id));
+
+  document.getElementById('newLevelId').value   = '';
+  document.getElementById('newLevelDesc').value = '';
+  renderLevels();
+  setStatus(`Nível ${id} adicionado.`, 'ok');
+}
+
+function removeLevel(id) {
+  if (levels.length <= 1) return setStatus('Deve existir pelo menos um nível.', 'err');
+  levels = levels.filter(l => l.id !== id);
+  renderLevels();
+  setStatus(`Nível ${id} removido.`, '');
+}
+
+function toggleLevels() {
+  const body    = document.getElementById('levelsBody');
+  const chevron = document.getElementById('levelsChevron');
+  body.classList.toggle('collapsed');
+  chevron.classList.toggle('open');
+}
+
+// Keep summary updated as passwords change
+document.addEventListener('input', e => {
+  if (e.target && e.target.id && e.target.id.startsWith('pass-')) {
+    updateLevelsSummary();
+  }
+});
+
+// ══════════════════════════════════════════════
+//  DOCUMENT MODE
+// ══════════════════════════════════════════════
+
+// Match any [SECRET_LX]…[/SECRET_LX]
+const SECRET_RE    = /\[SECRET_(L\d+)\]([\s\S]*?)\[\/SECRET_\1\]/gi;
+// Match any [ENCRYPTED_LX]…[/ENCRYPTED_LX]
+const ENCRYPTED_RE = /\[ENCRYPTED_(L\d+)\]([\s\S]*?)\[\/ENCRYPTED_\1\]/gi;
+
+async function encryptDocument() {
+  const input = document.getElementById('inputDoc').value;
+  SECRET_RE.lastIndex = 0;
+  const matches = [...input.matchAll(SECRET_RE)];
+
+  if (matches.length === 0)
+    return setStatus('Nenhum bloco [SECRET_LX] encontrado no documento.', 'err');
+
+  setStatus(`Criptografando ${matches.length} bloco(s)…`, 'info');
+
+  let result = input, offset = 0, done = 0, skipped = 0;
+
+  for (const m of matches) {
+    const levelId = m[1];
+    const pwd     = getPassword(levelId);
+
+    if (!pwd) { skipped++; continue; }
+
+    try {
+      const b64     = await encryptText(m[2], pwd);
+      const replace = `[ENCRYPTED_${levelId}]${b64}[/ENCRYPTED_${levelId}]`;
+      const start   = m.index + offset;
+      result = result.slice(0, start) + replace + result.slice(start + m[0].length);
+      offset += replace.length - m[0].length;
+      done++;
+    } catch (e) {
+      skipped++;
+    }
+  }
+
+  document.getElementById('outputDoc').value = result;
+
+  if (skipped > 0 && done === 0)
+    setStatus(`Nenhum bloco criptografado — configure as senhas dos níveis encontrados.`, 'err');
+  else if (skipped > 0)
+    setStatus(`✓ ${done} criptografado(s). ${skipped} ignorado(s) — nível sem senha.`, 'ok');
+  else
+    setStatus(`✓ ${done} bloco(s) criptografado(s).`, 'ok');
+}
+
+async function decryptDocument() {
+  const input = document.getElementById('inputDoc').value;
+  ENCRYPTED_RE.lastIndex = 0;
+  const matches = [...input.matchAll(ENCRYPTED_RE)];
+
+  if (matches.length === 0)
+    return setStatus('Nenhum bloco [ENCRYPTED_LX] encontrado no documento.', 'err');
+
+  setStatus(`Descriptografando ${matches.length} bloco(s)…`, 'info');
+
+  let result = input, offset = 0, done = 0, failed = 0, skipped = 0;
+
+  for (const m of matches) {
+    const levelId = m[1];
+    const pwd     = getPassword(levelId);
+
+    if (!pwd) { skipped++; continue; }
+
+    try {
+      const plain   = await decryptText(m[2].trim(), pwd);
+      const replace = `[SECRET_${levelId}]${plain}[/SECRET_${levelId}]`;
+      const start   = m.index + offset;
+      result = result.slice(0, start) + replace + result.slice(start + m[0].length);
+      offset += replace.length - m[0].length;
+      done++;
+    } catch {
+      failed++;
+    }
+  }
+
+  document.getElementById('outputDoc').value = result;
+
+  const parts = [];
+  if (done)    parts.push(`✓ ${done} descriptografado(s)`);
+  if (failed)  parts.push(`✗ ${failed} falhou (senha errada?)`);
+  if (skipped) parts.push(`${skipped} ignorado(s) (sem senha)`);
+  setStatus(parts.join(' · '), failed > 0 ? 'err' : 'ok');
+}
+
+function swapPanels() {
+  const a = document.getElementById('inputDoc');
+  const b = document.getElementById('outputDoc');
+  [a.value, b.value] = [b.value, a.value];
+}
+
+function clearAll() {
+  document.getElementById('inputDoc').value  = '';
+  document.getElementById('outputDoc').value = '';
+  setStatus('Painéis limpos.', '');
+}
+
+// ══════════════════════════════════════════════
+//  DIRECT MODE
+// ══════════════════════════════════════════════
+
+async function directEncrypt() {
+  const levelId = document.getElementById('directLevel').value;
+  const pwd     = getPassword(levelId);
+  if (!pwd) return setStatus(`Configure a senha para o nível ${levelId} acima.`, 'err');
+
+  const plain = document.getElementById('directPlain').value.trim();
+  if (!plain) return setStatus('Digite o texto a criptografar.', 'err');
+
+  setStatus('Criptografando…', 'info');
+  try {
+    const b64 = await encryptText(plain, pwd);
+    document.getElementById('directEncResult').value =
+      `[ENCRYPTED_${levelId}]${b64}[/ENCRYPTED_${levelId}]`;
+    setStatus(`✓ Texto criptografado como ${levelId}.`, 'ok');
+  } catch (e) {
+    setStatus('Erro: ' + e.message, 'err');
+  }
+}
+
+async function directDecrypt() {
+  const raw = document.getElementById('directCipher').value.trim();
+  if (!raw) return setStatus('Cole o bloco a descriptografar.', 'err');
+
+  // Auto-detect level from tag
+  const tagMatch = raw.match(/\[ENCRYPTED_(L\d+)\]([\s\S]*?)\[\/ENCRYPTED_\1\]/i);
+
+  let b64, levelId;
+  if (tagMatch) {
+    levelId = tagMatch[1];
+    b64     = tagMatch[2].trim();
+  } else {
+    // fallback: use selected level, treat raw as base64
+    levelId = document.getElementById('directDecLevel').value;
+    b64     = raw;
+  }
+
+  const pwd = getPassword(levelId);
+  if (!pwd) return setStatus(`Configure a senha para o nível ${levelId} acima.`, 'err');
+
+  setStatus('Descriptografando…', 'info');
+  try {
+    const plain = await decryptText(b64, pwd);
+    document.getElementById('directDecResult').value = plain;
+    setStatus(`✓ Descriptografado (nível ${levelId}).`, 'ok');
+  } catch {
+    setStatus('Falha — senha incorreta ou bloco corrompido.', 'err');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════
+
+function setStatus(msg, type = '') {
+  const el = document.getElementById('statusBar');
+  el.textContent = msg;
+  el.className = 'status-bar' + (type ? ' ' + type : '');
+}
+
+function copyText(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.value) return;
+  navigator.clipboard.writeText(el.value).then(() => {
+    const btn = document.querySelector(`[onclick="copyText('${id}')"]`);
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+async function pasteFromClipboard() {
+  try {
+    document.getElementById('inputDoc').value = await navigator.clipboard.readText();
+  } catch {
+    setStatus('Permissão de clipboard negada. Use Ctrl+V.', 'err');
+  }
+}
+
+function openFile() { document.getElementById('fileInput').click(); }
+
+function openEnvFile() { document.getElementById('envFileInput').click(); }
+
+function loadEnvFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    let loaded = 0, created = 0;
+    const toSet = [];
+
+    for (const raw of text.split('\n')) {
+      const line = raw.trim();
+      // Skip blank lines and comments
+      if (!line || line.startsWith('#')) continue;
+
+      // Accept:  L1=senha  |  SECRET_L1=senha  |  SECBLOCKS_L1=senha
+      const m = line.match(/^(?:[A-Z_]*?_?)?(L\d+)\s*=\s*["']?(.+?)["']?\s*$/i);
+      if (!m) continue;
+
+      const levelId = m[1].toUpperCase();
+      const pwd     = m[2];
+
+      // Create level if it doesn't exist yet
+      if (!levels.find(l => l.id === levelId)) {
+        levels.push({ id: levelId, desc: `Nível ${levelId}` });
+        levels.sort((a, b) => levelNum(a.id) - levelNum(b.id));
+        created++;
+      }
+
+      toSet.push({ levelId, pwd });
+    }
+
+    // Render once so all inputs exist, then set all values
+    renderLevels();
+    for (const { levelId, pwd } of toSet) {
+      const el = document.getElementById('pass-' + levelId);
+      if (el) { el.value = pwd; loaded++; }
+    }
+
+    updateLevelsSummary();
+    input.value = '';
+
+    const parts = [];
+    if (loaded)   parts.push(`${loaded} senha${loaded !== 1 ? 's' : ''} carregada${loaded !== 1 ? 's' : ''}`);
+    if (created)  parts.push(`${created} nível${created !== 1 ? 'is' : ''} criado${created !== 1 ? 's' : ''}`);
+    if (parts.length) setStatus(`✓ .env: ${parts.join(', ')}.`, 'ok');
+    else setStatus('Nenhuma entrada válida encontrada no .env.', 'err');
+  };
+  reader.onerror = () => setStatus('Erro ao ler o arquivo .env.', 'err');
+  reader.readAsText(file, 'UTF-8');
+}
+
+function loadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('inputDoc').value = e.target.result;
+    setStatus(`✓ Arquivo carregado: ${file.name}`, 'ok');
+  };
+  reader.onerror = () => setStatus('Erro ao ler o arquivo.', 'err');
+  reader.readAsText(file, 'UTF-8');
+  input.value = '';
+}
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Init
+renderLevels();
+</script>
+</body>
+</html>
