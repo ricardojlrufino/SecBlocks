@@ -170,6 +170,27 @@ function vaultPromptPin(title, hint, isSetup) {
   });
 }
 
+// ── Collect passwords currently filled in the UI ──
+function collectPasswords() {
+  const passwords = {};
+  for (const lvl of levels) {
+    const pwd = getPassword(lvl.id);
+    if (pwd) passwords[lvl.id] = pwd;
+  }
+  return passwords;
+}
+
+// ── Finish setup: mark unlocked and persist state ──
+function vaultAfterSetup(key, passwords, msg) {
+  vaultKey       = key;
+  vaultPasswords = passwords;
+  vaultUnlocked  = true;
+  applyVaultPasswords(passwords);
+  const count = Object.keys(passwords).length;
+  setStatus(`${msg}${count ? ` · ${count} senha(s) salva(s).` : '.'}`, 'ok');
+  vaultRenderState();
+}
+
 // ── Setup ──
 async function vaultSetup() {
   const hasWebAuthn = window.PublicKeyCredential && window.isSecureContext;
@@ -179,12 +200,12 @@ async function vaultSetup() {
     const pin = await vaultPromptPin('Definir PIN do cofre',
       'Biometria não disponível neste contexto. Use um PIN de pelo menos 6 dígitos.', true);
     if (!pin) return;
+    const passwords = collectPasswords();
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const key  = await deriveKey(pin, salt);
-    const { iv, blob } = await vaultEncryptPayload({}, key);
+    const { iv, blob } = await vaultEncryptPayload(passwords, key);
     vaultStore({ version: 1, mode: 'pin', salt: bytesToB64(salt), iv, blob });
-    setStatus('✓ Cofre configurado com PIN.', 'ok');
-    vaultRenderState();
+    vaultAfterSetup(key, passwords, '✓ Cofre configurado com PIN');
     return;
   }
 
@@ -210,13 +231,15 @@ async function vaultSetup() {
     const prfResult    = credential.getClientExtensionResults().prf?.results?.first;
     const credentialId = bytesToB64url(new Uint8Array(credential.rawId));
 
+    const passwords = collectPasswords();
+
     if (prfResult) {
       // PRF mode: key from PRF, no PIN needed
       const key = await vaultImportKey(prfResult);
-      const { iv, blob } = await vaultEncryptPayload({}, key);
+      const { iv, blob } = await vaultEncryptPayload(passwords, key);
       vaultStore({ version: 1, mode: 'prf', credentialId, iv, blob });
       vaultHideModal();
-      setStatus('✓ Cofre configurado com biometria (PRF).', 'ok');
+      vaultAfterSetup(key, passwords, '✓ Cofre configurado com biometria (PRF)');
     } else {
       // Basic mode: WebAuthn as gate, PIN as key
       const pin = await vaultPromptPin('Definir PIN de backup',
@@ -224,12 +247,10 @@ async function vaultSetup() {
       if (!pin) { vaultHideModal(); return; }
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const key  = await deriveKey(pin, salt);
-      const { iv, blob } = await vaultEncryptPayload({}, key);
+      const { iv, blob } = await vaultEncryptPayload(passwords, key);
       vaultStore({ version: 1, mode: 'basic', credentialId, salt: bytesToB64(salt), iv, blob });
-      setStatus('✓ Cofre configurado com WebAuthn + PIN.', 'ok');
+      vaultAfterSetup(key, passwords, '✓ Cofre configurado com WebAuthn + PIN');
     }
-
-    vaultRenderState();
 
   } catch (err) {
     vaultHideModal();
@@ -238,12 +259,12 @@ async function vaultSetup() {
       const pin = await vaultPromptPin('Definir PIN do cofre',
         'Biometria cancelada. Configure um PIN para proteger o cofre.', true);
       if (!pin) return;
+      const passwords = collectPasswords();
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const key  = await deriveKey(pin, salt);
-      const { iv, blob } = await vaultEncryptPayload({}, key);
+      const { iv, blob } = await vaultEncryptPayload(passwords, key);
       vaultStore({ version: 1, mode: 'pin', salt: bytesToB64(salt), iv, blob });
-      setStatus('✓ Cofre configurado com PIN.', 'ok');
-      vaultRenderState();
+      vaultAfterSetup(key, passwords, '✓ Cofre configurado com PIN');
     } else {
       setStatus(`Erro ao configurar cofre: ${err.message}`, 'err');
     }
@@ -808,6 +829,17 @@ function copyText(id) {
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
   });
+}
+
+function saveFile(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.value) return;
+  const blob = new Blob([el.value], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'output.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 async function pasteFromClipboard() {
