@@ -94,5 +94,9 @@ func runEncrypt(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(os.Stderr, "✓  %s\n", joinParts(" · ", parts...))
 	}
 
-	return writeOutput(encryptOutput, result.Text)
+	inputPath := ""
+	if len(args) > 0 {
+		inputPath = args[0]
+	}
+	return writeOutput(encryptOutput, inputPath, result.Text)
 }
