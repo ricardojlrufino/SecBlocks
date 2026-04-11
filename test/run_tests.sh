@@ -154,6 +154,32 @@ OUT=$(cat "$ENCRYPTED" | "$BINARY" decrypt --key "$SECRETS" 2>/dev/null) || true
 assert_contains "db-password-123" "$OUT"
 assert_not_contains "[ENCRYPTED_L1]" "$OUT"
 
+# 10. --replace: encrypt overwrites input file in-place
+begin_test "--replace: encrypt overwrites input file in-place"
+TMP_REPLACE="$TMPDIR_TESTS/replace_enc.md"
+cp "$PLAIN" "$TMP_REPLACE"
+"$BINARY" encrypt --key "$SECRETS" --replace "$TMP_REPLACE" 2>/dev/null || true
+REPLACED_CONTENT=$(cat "$TMP_REPLACE")
+assert_contains "[ENCRYPTED_L1]" "$REPLACED_CONTENT"
+assert_not_contains "db-password-123" "$REPLACED_CONTENT"
+
+# 11. --replace: decrypt overwrites input file in-place
+begin_test "--replace: decrypt overwrites input file in-place"
+TMP_REPLACE_DEC="$TMPDIR_TESTS/replace_dec.md"
+cp "$ENCRYPTED" "$TMP_REPLACE_DEC"
+"$BINARY" decrypt --key "$SECRETS" --replace "$TMP_REPLACE_DEC" 2>/dev/null || true
+REPLACED_DEC=$(cat "$TMP_REPLACE_DEC")
+assert_contains "db-password-123" "$REPLACED_DEC"
+assert_not_contains "[ENCRYPTED_L1]" "$REPLACED_DEC"
+
+# 12. --replace without file argument must fail
+begin_test "--replace: error when no file argument (stdin)"
+if printf 'x' | "$BINARY" encrypt --key "$SECRETS" --replace >/dev/null 2>&1; then
+    fail "expected exit 1 when --replace is used without a file argument"
+else
+    ok "exit code 1"
+fi
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 
 echo ""
