@@ -154,7 +154,7 @@ secblocks keygen -n 10 -o ~/.env.secrets
 chmod 600 ~/.env.secrets
 ```
 
-`secblocks` always checks `~/.env.secrets` automatically, so no `--env` flag is needed.
+`secblocks` always checks `~/.env.secrets` automatically, so no `--key` flag is needed.
 
 In CI/CD, export passwords as environment variables — the tool picks them up without any file:
 
@@ -244,7 +244,7 @@ secblocks encrypt doc.md -o doc.enc.md
 cat doc.md | secblocks encrypt > doc.enc.md
 
 # Custom secrets file
-secblocks encrypt doc.md -e /run/secrets/.env.secrets -o doc.enc.md
+secblocks encrypt doc.md -k /run/secrets/.env.secrets -o doc.enc.md
 ```
 
 Blocks whose level has no password configured are **silently skipped** — useful when a team member only has L1/L2 passwords and the document also contains L10 blocks.
@@ -256,7 +256,7 @@ Blocks whose level has no password configured are **silently skipped** — usefu
 ```bash
 secblocks decrypt doc.enc.md -o doc.md
 cat doc.enc.md | secblocks decrypt > doc.md
-secblocks decrypt doc.enc.md -e /run/secrets/.env.secrets
+secblocks decrypt doc.enc.md -k /run/secrets/.env.secrets
 ```
 
 ---
@@ -264,7 +264,7 @@ secblocks decrypt doc.enc.md -e /run/secrets/.env.secrets
 #### Global flag
 
 ```
--e, --env string   path to passwords file (default: .env.secrets)
+-k, --key string   path to passwords file (default: .env.secrets)
 ```
 
 ---
@@ -276,7 +276,7 @@ Passwords are merged from three sources in this order — later sources override
 | Priority | Source | Notes |
 |---|---|---|
 | 1 (lowest) | `~/.env.secrets` | User-level fallback, always consulted |
-| 2 | `.env.secrets` in the current directory (or `--env`) | Project-level file |
+| 2 | `.env.secrets` in the current directory (or `--key`) | Project-level file |
 | 3 (highest) | Environment variables | Useful in CI/CD and containers |
 
 The canonical format is `SECRET_LX`. The parser also accepts bare `LX` and `SECBLOCKS_LX` for compatibility.
@@ -288,16 +288,16 @@ passwords: /home/alice/.env.secrets, .env.secrets
 ✓  3 encrypted
 ```
 
-**Lookup rules for `--env`:**
-- If `--env` is **not** passed: both the home fallback and `.env.secrets` (if present) are merged. Missing files are silently ignored.
-- If `--env` is **explicitly** passed: the given path must exist, otherwise an error is returned.
+**Lookup rules for `--key`:**
+- If `--key` is **not** passed: both the home fallback and `.env.secrets` (if present) are merged. Missing files are silently ignored.
+- If `--key` is **explicitly** passed: the given path must exist, otherwise an error is returned.
 
 ```bash
 # Inject passwords inline — no file needed at all
 SECRET_L1=pass1 SECRET_L3=pass3 secblocks decrypt doc.enc.md
 
 # Point to a specific file (must exist)
-secblocks decrypt doc.enc.md --env /run/secrets/.env.secrets
+secblocks decrypt doc.enc.md --key /run/secrets/.env.secrets
 ```
 
 ---
@@ -396,7 +396,7 @@ The binary wire format (`base64( salt | iv | ciphertext )`) is identical between
     ├── main.go
     ├── go.mod
     ├── cmd/
-    │   ├── root.go     # global --env flag
+    │   ├── root.go     # global --key flag
     │   ├── encrypt.go
     │   ├── decrypt.go
     │   ├── keygen.go

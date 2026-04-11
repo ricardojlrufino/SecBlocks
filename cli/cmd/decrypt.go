@@ -19,7 +19,7 @@ var decryptCmd = &cobra.Command{
 
 Examples:
   secblocks decrypt doc.enc.md -o doc.md
-  secblocks decrypt doc.enc.md --env /etc/secblocks/.env.secrets
+  secblocks decrypt doc.enc.md --key /etc/secblocks/.env.secrets
   cat doc.enc.md | secblocks decrypt > doc.md`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runDecrypt,

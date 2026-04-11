@@ -89,7 +89,7 @@ assert_files_equal() {
 
 # 1. Encrypt produces encrypted output and hides plaintext
 begin_test "encrypt: produces encrypted output"
-OUT=$("$BINARY" encrypt --env "$SECRETS" "$PLAIN" 2>/dev/null) || true
+OUT=$("$BINARY" encrypt --key "$SECRETS" "$PLAIN" 2>/dev/null) || true
 assert_contains "[ENCRYPTED_L1]" "$OUT"
 assert_contains "[ENCRYPTED_L2]" "$OUT"
 assert_not_contains "db-password-123" "$OUT"
@@ -98,7 +98,7 @@ assert_not_contains "refresh-token-xyz-987654" "$OUT"
 
 # 2. Decrypt known file back to plaintext
 begin_test "decrypt: known file decrypts back to plaintext"
-OUT=$("$BINARY" decrypt --env "$SECRETS" "$ENCRYPTED" 2>/dev/null) || true
+OUT=$("$BINARY" decrypt --key "$SECRETS" "$ENCRYPTED" 2>/dev/null) || true
 assert_contains "db-password-123" "$OUT"
 assert_contains "api-key-abcdef-123456" "$OUT"
 assert_contains "refresh-token-xyz-987654" "$OUT"
@@ -108,49 +108,49 @@ assert_contains "BEGIN OPENSSH PRIVATE KEY" "$OUT"
 begin_test "roundtrip: encrypt then decrypt matches original"
 TMP_ENC="$TMPDIR_TESTS/roundtrip_enc.md"
 TMP_DEC="$TMPDIR_TESTS/roundtrip_dec.md"
-"$BINARY" encrypt --env "$SECRETS" "$PLAIN"    -o "$TMP_ENC" 2>/dev/null || true
-"$BINARY" decrypt --env "$SECRETS" "$TMP_ENC"  -o "$TMP_DEC" 2>/dev/null || true
+"$BINARY" encrypt --key "$SECRETS" "$PLAIN"    -o "$TMP_ENC" 2>/dev/null || true
+"$BINARY" decrypt --key "$SECRETS" "$TMP_ENC"  -o "$TMP_DEC" 2>/dev/null || true
 assert_files_equal "$PLAIN" "$TMP_DEC"
 
-# 4. --env uses ONLY the specified file, not home fallback
-begin_test "--env flag: uses only specified file (no home fallback)"
-STDERR=$("$BINARY" encrypt --env "$SECRETS" "$PLAIN" 2>&1 >/dev/null) || true
+# 4. --key uses ONLY the specified file, not home fallback
+begin_test "--key flag: uses only specified file (no home fallback)"
+STDERR=$("$BINARY" encrypt --key "$SECRETS" "$PLAIN" 2>&1 >/dev/null) || true
 assert_contains ".test.secrets" "$STDERR"
 # home file must NOT appear in the source list
 if echo "$STDERR" | grep -qF ".env.secrets" && ! echo "$STDERR" | grep -qF ".test.secrets"; then
-    fail "home ~/.env.secrets loaded despite explicit --env"
+    fail "home ~/.env.secrets loaded despite explicit --key"
 else
-    ok "home fallback not listed when --env is explicit"
+    ok "home fallback not listed when --key is explicit"
 fi
 
 # 5. Error on empty secrets file
 begin_test "encrypt: error when secrets file has no passwords"
 EMPTY="$TMPDIR_TESTS/.empty.secrets"
 touch "$EMPTY"
-assert_exit 1 "$BINARY" encrypt --env "$EMPTY" "$PLAIN"
+assert_exit 1 "$BINARY" encrypt --key "$EMPTY" "$PLAIN"
 
-# 6. Error when --env file does not exist
-begin_test "encrypt: error when --env file does not exist"
-assert_exit 1 "$BINARY" encrypt --env "/nonexistent/.env.secrets" "$PLAIN"
+# 6. Error when --key file does not exist
+begin_test "encrypt: error when --key file does not exist"
+assert_exit 1 "$BINARY" encrypt --key "/nonexistent/.env.secrets" "$PLAIN"
 
 # 7. Partial decrypt: only levels with known password are decrypted
 begin_test "decrypt: skips blocks with unknown password (partial decrypt)"
 PARTIAL="$TMPDIR_TESTS/.partial.secrets"
 L1_PASS=$(grep "SECRET_L1" "$SECRETS" | cut -d= -f2)
 echo "SECRET_L1=$L1_PASS" > "$PARTIAL"
-OUT=$("$BINARY" decrypt --env "$PARTIAL" "$ENCRYPTED" 2>/dev/null) || true
+OUT=$("$BINARY" decrypt --key "$PARTIAL" "$ENCRYPTED" 2>/dev/null) || true
 assert_contains "db-password-123" "$OUT"          # L1 → decrypted
 assert_contains "[ENCRYPTED_L2]" "$OUT"            # L2 → still encrypted
 
 # 8. Pipe: encrypt via stdin, output to stdout
 begin_test "stdin/stdout: encrypt via pipe"
-OUT=$(cat "$PLAIN" | "$BINARY" encrypt --env "$SECRETS" 2>/dev/null) || true
+OUT=$(cat "$PLAIN" | "$BINARY" encrypt --key "$SECRETS" 2>/dev/null) || true
 assert_contains "[ENCRYPTED_L1]" "$OUT"
 assert_not_contains "[SECRET_L1]" "$OUT"
 
 # 9. Pipe: decrypt via stdin, output to stdout
 begin_test "stdin/stdout: decrypt via pipe"
-OUT=$(cat "$ENCRYPTED" | "$BINARY" decrypt --env "$SECRETS" 2>/dev/null) || true
+OUT=$(cat "$ENCRYPTED" | "$BINARY" decrypt --key "$SECRETS" 2>/dev/null) || true
 assert_contains "db-password-123" "$OUT"
 assert_not_contains "[ENCRYPTED_L1]" "$OUT"
 
