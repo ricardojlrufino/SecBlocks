@@ -8,10 +8,11 @@ import (
 )
 
 var (
-	envFile     string
-	envExplicit bool // true when --env was set by the user
-	doEncrypt   bool
-	doDecrypt   bool
+	envFile        string
+	envExplicit    bool // true when --env was set by the user
+	doEncrypt      bool
+	doDecrypt      bool
+	replaceInPlace bool
 )
 
 const defaultEnvFile = ".env.secrets"
@@ -51,6 +52,8 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&envFile, "key", "k", defaultEnvFile,
 		"level passwords file")
+	rootCmd.PersistentFlags().BoolVarP(&replaceInPlace, "replace", "r", false,
+		"write result back to the input file (ignored if -o is set)")
 	rootCmd.Flags().BoolVarP(&doEncrypt, "encrypt", "e", false, "encrypt [SECRET_LX] blocks")
 	rootCmd.Flags().BoolVarP(&doDecrypt, "decrypt", "d", false, "decrypt [ENCRYPTED_LX] blocks")
 	// Detect whether the user explicitly passed --env
