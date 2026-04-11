@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -27,13 +28,41 @@ func readInput(args []string) (string, error) {
 	return string(b), nil
 }
 
-// writeOutput writes to a file or to stdout if path is empty.
-func writeOutput(path, text string) error {
-	if path == "" {
-		_, err := fmt.Print(text)
+// writeOutput writes to outputPath, replaces inputPath in-place (if --replace),
+// or falls back to stdout. Priority: -o > --replace > stdout.
+func writeOutput(outputPath, inputPath, text string) error {
+	if outputPath != "" {
+		return writeFileAtomic(outputPath, text)
+	}
+	if replaceInPlace {
+		if inputPath == "" {
+			return fmt.Errorf("--replace requires a file argument")
+		}
+		return writeFileAtomic(inputPath, text)
+	}
+	_, err := fmt.Print(text)
+	return err
+}
+
+// writeFileAtomic writes text to path via a temp file + os.Rename so the
+// original is never left in a partially-written state on crash or disk-full.
+func writeFileAtomic(path, text string) error {
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, ".secblocks-*.tmp")
+	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(text), 0o600)
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+
+	if _, err := tmp.WriteString(text); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, path)
 }
 
 // joinParts joins non-empty parts with the separator.
