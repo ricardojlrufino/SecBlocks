@@ -72,5 +72,9 @@ func runDecrypt(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(os.Stderr, "%s  %s\n", status, joinParts(" · ", parts...))
 	}
 
-	return writeOutput(decryptOutput, result.Text)
+	inputPath := ""
+	if len(args) > 0 {
+		inputPath = args[0]
+	}
+	return writeOutput(decryptOutput, inputPath, result.Text)
 }
